@@ -72,7 +72,7 @@ This section records information for easy reference.
   R & Requirement\\
   SC & Scientific Computing \\
   SRS & Software Requirements Specification\\
-  \progname & Explanation of program name\\
+  \progname & Distributed system for local artificial intelligence inference. \\
   UC & Unlikely Change \\
   \wss{etc.} & \wss{...}\\
   \bottomrule
@@ -161,6 +161,15 @@ change.
   hardware on which the software is running.
 \item[\refstepcounter{acnum} \actheacnum \label{acInput}:] The format of the
   initial input data.
+\item[\refstepcounter{acnum} \actheacnum \label{acUI}:] The layout, visual design,
+  and frontend framework of the Lake Client user interface (network graph, metrics
+  display, and chat view). These will likely change based on user feedback.
+\item[\refstepcounter{acnum} \actheacnum \label{acMetrics}:] The set of device and
+  network health and performance metrics displayed to the user, and how they are
+  presented (e.g., bottleneck highlighting).
+\item[\refstepcounter{acnum} \actheacnum \label{acCoordAPI}:] The request and
+  response format of the Coordinator's REST API, as consumed by the user
+  interface.
 \item ...
 \end{description}
 
@@ -180,6 +189,13 @@ decisions will be changed.
 \begin{description}
 \item[\refstepcounter{ucnum} \uctheucnum \label{ucIO}:] Input/Output devices
   (Input: File and/or Keyboard, Output: File, Memory, and/or Screen).
+\item[\refstepcounter{ucnum} \uctheucnum \label{ucUIClient}:] The user interface
+  is a graphical client that obtains all \progname{} network information and
+  sends all requests through the local Coordinator, and never communicates
+  directly with other nodes or with the Inference Engine.
+\item[\refstepcounter{ucnum} \uctheucnum \label{ucUIInvite}:] Join invitations
+  are handled by a separate follower-side module and are not part of the User
+  Interface module described here.
 \item ...
 \end{description}
 
@@ -231,6 +247,15 @@ actually be implemented.
 The design of the system is intended to satisfy the requirements developed in
 the SRS. In this stage, the system is decomposed into modules. The connection
 between requirements and modules is listed in Table~\ref{TblRT}.
+
+The following design decisions connect the User Interface module (\mref{mUserInterface}) to the SRS:
+\begin{itemize}
+\item \textbf{Device discovery, selection, and model choice} (FR.S.5.1, FR.S.5.2, FR.S.5.3): The user interface lists the devices found by the Coordinator, lets the user choose which to include, and lets the user pick a GGUF model file. It passes these choices to the Coordinator as network requests and does not communicate with other nodes itself.
+\item \textbf{Infeasible partitioning} (FR.S.5.4): The Model Partitioner reports a failure through the Coordinator, and the user interface displays the error to the user.
+\item \textbf{Metrics and bottlenecks} (FR.S.5.5, FR.S.5.6): The user interface only renders the latest metrics snapshot provided by the Coordinator, for the network, each node, and each connection, and highlights the bottleneck the Coordinator identifies. It does not store metric history.
+\item \textbf{Usability} (NFR.S.1, NFR.S.2, NFR.S.7): The layout and visual design are hidden inside this module (\acref{acUI}) so they can be revised after usability testing without affecting other modules.
+\item \textbf{Chat interface}: The chat view is a convenience for starting and continuing inference sessions from the Lake Client. All inference requests are routed through the Coordinator, which serves the OpenAI-compatible API (FR.S.1.9).
+\end{itemize}
 
 \wss{The intention of this section is to document decisions that are made
   ``between'' the requirements and the design.  To satisfy some requirements,
@@ -289,8 +314,16 @@ to be implemented.
   [Information to include for leaf modules in the decomposition by secrets tree.]
 \end{description}
 
-\subsubsection{Etc.}
+\subsubsection{User Interface (\mref{mUserInterface})}
 
+\begin{description}
+\item[Secrets:] Implementation of design choices with regards to user interfaces and user experience,
+routing of requests and underlying services. Hides underlying implementation and management of actual
+\progname{} network.
+\item[Services:] Provides a graph-based visualization of the \progname{} device 
+network layout and device states, along with a chat interface. This interface allows
+users to view device health \& performance statistics, manage the cluster (add/remove devices)
+and begin inference sessions.
 
 \subsection{Software Decision Module}
 
@@ -320,17 +353,11 @@ requirements and between the modules and the anticipated changes.
 \toprule
 \textbf{Req.} & \textbf{Modules}\\
 \midrule
-R1 & \mref{mHH}, \mref{mInput}, \mref{mParams}, \mref{mControl}\\
-R2 & \mref{mInput}, \mref{mParams}\\
-R3 & \mref{mVerify}\\
-R4 & \mref{mOutput}, \mref{mControl}\\
-R5 & \mref{mOutput}, \mref{mODEs}, \mref{mControl}, \mref{mSeqDS}, \mref{mSolver}, \mref{mPlot}\\
-R6 & \mref{mOutput}, \mref{mODEs}, \mref{mControl}, \mref{mSeqDS}, \mref{mSolver}, \mref{mPlot}\\
-R7 & \mref{mOutput}, \mref{mEnergy}, \mref{mControl}, \mref{mSeqDS}, \mref{mPlot}\\
-R8 & \mref{mOutput}, \mref{mEnergy}, \mref{mControl}, \mref{mSeqDS}, \mref{mPlot}\\
-R9 & \mref{mVerifyOut}\\
-R10 & \mref{mOutput}, \mref{mODEs}, \mref{mControl}\\
-R11 & \mref{mOutput}, \mref{mODEs}, \mref{mEnergy}, \mref{mControl}\\
+FR.S.5.1, FR.S.5.2, FR.S.5.3 & \mref{mUserInterface}\\
+FR.S.5.4 & \mref{mUserInterface}\\
+FR.S.5.5, FR.S.5.6 & \mref{mUserInterface}\\
+NFR.S.1, NFR.S.2, NFR.S.7 & \mref{mUserInterface}\\
+% Add rows for the other modules here.
 \bottomrule
 \end{tabular}
 \caption{Trace Between Requirements and Modules}
@@ -417,36 +444,17 @@ it is not appropriate for a given project.}
 
 \section{Generative AI Use Disclosure}
 
-\wss{ChatGPT (version 5) was used to brainstorm ideas for the template for this disclose section.}
-
 \subsection{AI Tools Used}
 
-\wss{Give the name of the AI tool(s) used and the version.}
+Claude Sonnet 5.5
 
 \subsection{How and Where Used}
 
-\wss{Explain what the tool(s) were used for.  Examples include: brainstorming,
-explaining a technical concept, reviewing the document, generating or modifying
-text, generating or modifying diagrams, identifying errors or omissions or
-inconsistencies.}
-
-\wss{For each of the uses, identify which parts of the document were affected.}
-
-\wss{You do not need to report every interaction, but you should disclose the 
-uses that materially contributed to your work}
+Sonnet 5.5 was used to assist in the mapping between the User Interface module and the SRS contents for the connection between requirements and design, along with the traceability table.
 
 \subsection{Verification of AI-Generated Content}
 
-\wss{\begin{itemize}
-    \item Describe how the team checked AI-generated or AI-assisted material
-    before including it in the document.
-    \item In particular, verify factual claims, technical assertions,
-    requirements, calculations, references, and other information for which an
-    AI system may produce incorrect or fabricated results.
-    \item \textbf{The team is responsible for the accuracy, completeness,
-consistency, and appropriateness of the submitted document, regardless of
-whether material was generated by a human or an AI system.}
-\end{itemize}}
+Any generated content was proofread and verified to confirm accuracy and alignment with existing team objectives and documentation.
 
 \newpage{}
 

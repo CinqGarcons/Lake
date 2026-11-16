@@ -156,6 +156,120 @@ The following table is taken directly from the Module Guide document for this pr
 \newpage
 ~\newpage
 
+\section{MIS of User Interface Module} \label{UserIntMod}
+\subsection{Module}
+
+User Interface (M2)
+
+\subsection{Uses}
+
+\begin{itemize}
+  \item \textbf{Coordinator.getNetworkState()}: Returns the latest \texttt{NetworkState} (device list and health/usage statistics).
+  \item \textbf{Coordinator.submitChatMessage(message)}: Routes a user's chat message to the \progname{} network.
+  \item \textbf{Coordinator.submitNetworkRequest(request)}: Passes a user's network management request (scan, add or remove a device, select a model file) to the Coordinator.
+  \item \textbf{NetworkState, NodeMetrics, LinkMetrics, ChatState, ChatMessage, NetworkRequest}: Abstract data types defined in the Notation section.
+  \item \textbf{RenderingError}: Exception raised when rendering fails.
+\end{itemize}
+
+\subsection{Syntax}
+
+\subsubsection{Exported Constants}
+
+\begin{itemize}
+  \item \texttt{REFRESH\_RATE}: $\mathbb{R}$ - frequency of interface updates (Hz)
+\end{itemize}
+
+\subsubsection{Exported Access Programs}
+
+\begin{center}
+\begin{tabular}{p{3.4cm} p{3.8cm} p{2cm} p{3cm}}
+\hline
+\textbf{Name} & \textbf{In} & \textbf{Out} & \textbf{Exceptions} \\
+\hline
+renderNetwork & state: NetworkState & - & RenderingError \\
+\hline
+displayError & message: $\Sigma^*$ & - & - \\
+\hline
+requestNetworkChange & request: NetworkRequest & - & - \\
+\hline
+sendChatMessage & message: $\Sigma^*$ & - & - \\
+\hline
+renderChat & state: ChatState & - & RenderingError \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Semantics}
+
+\subsubsection{State Variables}
+
+\begin{itemize}
+  \item uiState: Abstract UI representation
+  \item NetworkState: State of device network, the most recent snapshot of the network and its metrics
+  \item ChatState: Current chat session shown to the user
+\end{itemize}
+
+\subsubsection{Environment Variables}
+
+\begin{itemize}
+  \item window: display managed by the browser and operating system.
+\end{itemize}
+
+\subsubsection{Assumptions}
+
+\begin{itemize}
+  \item A compatible browser is used: The browser is assumed to support the user interface and the frameworks used to develop it.
+  \item User interactions via keyboard. and mouse are delivered to the application by the browser and operating system of the device.
+  \item The Coordinator on the same device is running and reachable. Communication with the \progname{} network, including the REST API, is handled by the Coordinator, not by this module.
+  \item The state values passed to \texttt{renderNetwork} and \texttt{renderChat} are well-formed instances of their types.
+\end{itemize}
+
+\subsubsection{Access Routine Semantics}
+
+\noindent renderNetwork(state):
+\begin{itemize}
+\item transition: uiState := uiState with message displayed to the user. Window is also refreshed.
+\item output: -
+\item exception: raises RenderingError if the window cannot be updated.
+\end{itemize}
+
+\noindent displayError(message):
+\begin{itemize}
+\item transition: uiState := uiState with error message displayed to the user. The window is then refreshed.
+\item output: -
+\item exception: -
+\end{itemize}
+
+\noindent requestNetworkChange(request):
+\begin{itemize}
+\item transition: Calls Coordinator.submitNetworkRequest(request). The resulting change in the network is shown through a later call to renderNetwork.
+\item output: -
+\item exception: -
+\end{itemize}
+
+\noindent sendChatMessage(message):
+\begin{itemize}
+\item transition: chatState := chatState with the message (user, message, $\top$) appended; calls Coordinator.submitChatMessage(message).
+\item output: -
+\item exception: -
+\end{itemize}
+
+\noindent renderChat(state):
+\begin{itemize}
+\item transition: chatState := state; uiState := the messages of state in order. Any message with isComplete = $\bot$ is shown with a visible indication that it is incomplete. The window is then refreshed.
+\item output: -
+\item exception: raises RenderingError if the window cannot be updated.
+\end{itemize}
+
+
+\subsubsection{Local Functions}
+
+\begin{itemize}
+  \item refreshUI(): Refreshes the window from uiState at REFRESH\_RATE, using the latest value of Coordinator.getNetworkState().
+  \item highlightBottleneck(): NetworkState $\rightarrow$ element identifier. Returns the node or link to highlight, or empty if none.
+  \item formatMetrics(): (NodeMetrics $\cup$ LinkMetrics) $\rightarrow$ $\Sigma^*$. Converts a node's or link's metrics into the text shown to the user.
+\end{itemize}
+
 \section{MIS of \wss{Module Name}} \label{Module} \wss{Use labels for
   cross-referencing}
 
@@ -168,7 +282,6 @@ The following table is taken directly from the Module Guide document for this pr
 \wss{Short name for the module}
 
 \subsection{Uses}
-
 
 \subsection{Syntax}
 
@@ -242,32 +355,16 @@ The following table is taken directly from the Module Guide document for this pr
 
 \subsection{AI Tools Used}
 
-\wss{Give the name of the AI tool(s) used and the version.}
+Claude Sonnet 5.5
 
 \subsection{How and Where Used}
 
-\wss{Explain what the tool(s) were used for.  Examples include: brainstorming,
-explaining a technical concept, reviewing the document, generating or modifying
-text, generating or modifying diagrams, identifying errors or omissions or
-inconsistencies.}
-
-\wss{For each of the uses, identify which parts of the document were affected.}
-
-\wss{You do not need to report every interaction, but you should disclose the 
-uses that materially contributed to your work}
+Sonnet 5.5 was used to expand upon initial content in the MIS for the user interface module. Although all original ideas (uses, syntax, and semantics) were provided manually, generative AI was used to improve the quality of the section by providing more detail and
+adding the anticipated changes.
 
 \subsection{Verification of AI-Generated Content}
 
-\wss{\begin{itemize}
-    \item Describe how the team checked AI-generated or AI-assisted material
-    before including it in the document.
-    \item In particular, verify factual claims, technical assertions,
-    requirements, calculations, references, and other information for which an
-    AI system may produce incorrect or fabricated results.
-    \item \textbf{The team is responsible for the accuracy, completeness,
-consistency, and appropriateness of the submitted document, regardless of
-whether material was generated by a human or an AI system.}
-\end{itemize}}
+Any generated content was proofread and verified to confirm accuracy and alignment with existing team objectives and documentation.
 
 \newpage{}
 
