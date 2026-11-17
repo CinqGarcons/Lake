@@ -197,6 +197,10 @@ The following table is taken directly from the Module Guide document for this pr
 
 Coordinator
 
+\subsection{Uses}
+
+Core (Section~\ref{mis:core}), Partition, Inference Engine.
+
 \subsection{Syntax}
 
 \subsubsection{Exported Types}
@@ -296,6 +300,10 @@ that an application sends to the OpenAI-compatible API.\par}
 
 Core
 
+\subsection{Uses}
+
+Inference Engine, Tensor I/O.
+
 \subsection{Syntax}
 
 \subsubsection{Exported Types}
@@ -380,7 +388,7 @@ runs Core like every other node.
   \item Busy: receiveInvite is called while the node is a member of a Lake network led
     by another device.
   \item NoInvitation: answerInvite is called when no invitation is waiting.
-  \item NotLeader: loadPartition, releasePartition or reportHealth is called by from a device other than the
+  \item NotLeader: loadPartition, releasePartition or reportHealth is called by a device other than the
     node's leader, or before the node has joined.
   \item LoadFailed: the assigned partition cannot be loaded into the node's
     GPU-accessible memory.
