@@ -181,7 +181,7 @@ The following table is taken directly from the Module Guide document for this pr
 & Lake Client\\
 \midrule
 
-\multirow{2}{0.3\textwidth}{Software Decision} & Partition\\
+\multirow{2}{0.3\textwidth}{Software Decision} & \hyperref[mis:partition]{Partition}\\
 & Tensor I/O\\
 \bottomrule
 
@@ -190,6 +190,92 @@ The following table is taken directly from the Module Guide document for this pr
 \label{TblMH}
 \end{table}
 
+\newpage
+
+\section{MIS of Partition} \label{mis:partition}
+\begingroup
+\setlength{\emergencystretch}{3em}
+
+\subsection{Module}
+
+Partition is a stateless library called by the Coordinator to select an allocation
+scheme for distributed inference for the selected model.
+
+\subsection{Uses}
+
+None, as all information needed to select a scheme is supplied as input.
+
+\subsection{Syntax}
+
+\subsubsection{Exported Constants}
+
+\textit{MIN\_NODES} $=2$, the minimum number of executing devices for distributed
+inference.
+
+\subsubsection{Exported Types}
+
+\begin{itemize}
+\item $\mathit{DeviceID}$: string identifying a device on the local network.
+\item $\mathit{ModelInfo}$: a sequence of partition-unit records in
+  execution order. Each record contains \textit{memory}: $\mathbb{N}$
+  (estimated weight and KV-cache memory in bytes for \textit{CONTEXT\_MAX})
+  and \textit{layers}: $\{0,1\}$ (1 for a transformer layer, 0 for an embedding
+  or output head).
+\item $\mathit{DeviceInfo}$: a record containing \textit{id}: $\mathit{DeviceID}$
+  (device identifier), \textit{capacity}: $\mathbb{N}$ (usable GPU-accessible
+  memory in bytes) and \textit{rate}: $\mathbb{R}$ (measured token throughput
+  in tokens per second).
+\item $\mathit{Scheme}$: a sequence of allocation records in execution order.
+  Each record contains \textit{node}: $\mathit{DeviceID}$ (assigned device),
+  \textit{first}: $\mathbb{N}$ (first partition-unit index) and
+  \textit{last}: $\mathbb{N}$ (last partition-unit index). Both bounds are
+  inclusive. Coordinator uses these assignments to configure Core.
+\end{itemize}
+
+\subsubsection{Exported Access Programs}
+
+\begin{center}
+\small
+\begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}Xl>{\raggedright\arraybackslash}p{3.2cm}@{}}
+\toprule
+\textbf{Name} & \textbf{In} & \textbf{Out} & \textbf{Exceptions}\\
+\midrule
+partition & $m:\mathit{ModelInfo}$, $D$: sequence of $\mathit{DeviceInfo}$ &
+$\mathit{Scheme}$ & InvalidInput, NoValidScheme\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+The operation \texttt{partition} takes $m$ (ordered model-unit memory estimates
+and layer indicators) and $D$ (eligible devices with usable capacity and measured
+throughput). It returns a scheme for Coordinator to distribute and load.
+A subsequent call with updated inputs computes a new scheme without retaining
+the previous result.
+
+\subsection{Semantics}
+
+\subsubsection{State Variables}
+
+None, as the Coordinator owns the allocation schemes.
+
+\subsubsection{Environment Variables}
+
+None, as no other files (e.g. files, clocks, device memory and network connections)
+are accessed by this module.
+
+\subsubsection{Exceptions}
+
+\begin{description}
+\item[InvalidInput:] $m$ is empty, a unit has a negative memory estimate or an
+invalid layer indicator, device identifiers are empty or repeated, capacities
+are negative, or rates are negative or non-finite. Values outside the declared
+input types are invalid input.
+\item[NoValidScheme:] Inputs are well formed, but no allocation meeting the
+model coverage, device memory and minimum-device requirements exists. This includes
+having fewer than \textit{MIN\_NODES} eligible devices.
+\end{description}
+
+\endgroup
 \newpage
 
 \section{MIS of GGML} \label{mis:ggml}
@@ -763,6 +849,9 @@ recv & -- & $\mathit{Step}$ &
     reads GGUF files and owns the tensor type.
 \end{itemize}
 
+ChatGPT gpt-6.1-sol was used to review an initial human written draft for the MIS of Partition, then was used to translate the draft onto the LaTeX document 
+ and refine wording and sentence structure.
+
 \subsection{Verification of AI-Generated Content}
 
 The access programs of the Coordinator and Core were checked against each other
@@ -772,6 +861,9 @@ state names were checked against the SRS. The Lake Client MIS was verified
 against existing documentation (SRS) and proofread for correctness. We checked the Inference Engine's load and report against the calls the Core
 module makes, and checked that the Inference Engine uses every GGML access
 program.
+
+MIS of Partition content was verified to ensure no technical details 
+drifted from the original human written base point.
 
 \newpage{}
 

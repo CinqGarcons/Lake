@@ -372,6 +372,22 @@ routing of requests and underlying services.
 		performance heuristics, and networking protocols used to transfer Tensors between devices.
 \end{description}
 
+\subsubsection{Partition Module (\mref{mPartition})}
+\label{sec:mPartition}
+
+\begin{description}
+\item[Secrets:] The algorithm for choosing model
+  partition boundaries and assigning them to devices.
+\item[Services:] Produces an allocation scheme from model memory
+  estimates and device capability measurements supplied by Coordinator. The
+  scheme covers the complete model in consecutive partitions, fits each 
+  device's usable memory and uses at least \textit{MIN\_NODES}
+  devices for distributed inference. Reports failure when no valid scheme
+  exists. Coordinator applies the scheme and manages loading and recovery.
+\item[Implemented By:] \progname{}
+\item[Type of Module:] Library
+\end{description}
+
 \section{Traceability Matrix} \label{SecTM}
 
 This section shows two traceability matrices: between the modules and the
@@ -385,6 +401,10 @@ requirements and between the modules and the anticipated changes.
 \toprule
 \textbf{Req.} & \textbf{Modules}\\
 \midrule
+FR.S.2.1--2.4 & \mref{mPartition}\\
+SR1-1--SR1-3 & \mref{mPartition}\\
+NFR.E.2 & \mref{mPartition}\\
+NFR.E.4 & \mref{mPartition}\\
 FR.S.3.1 & \mref{mIE}, \mref{mGGML}\\
 FR.S.3.2 & \mref{mIE}, \mref{mGGML}\\
 FR.S.3.3 & \mref{mIE}\\
@@ -406,7 +426,7 @@ NFR.S.1 & \mref{mLC}\\
 NFR.S.2 & \mref{mLC}\\
 NFR.S.4 & \mref{mIE}, \mref{mGGML}\\
 NFR.S.5 & \mref{mIE}\\
-NFR.S.6 & \mref{mIE}\\
+NFR.S.6 & \mref{mIE}, \mref{mPartition}\\
 NFR.S.7 & \mref{mLC}\\
 NFR.S.8 & \mref{mGGML}\\
 NFR.S.11 & \mref{mTIO}\\
@@ -453,6 +473,9 @@ NFR.S.15 & \mref{mGGML}\\
 
 \section{Use Hierarchy Between Modules} \label{SecUse}
 
+Coordinator uses Partition to obtain allocation schemes. Partition receives
+all required information through its inputs and does not use other Lake modules.
+
 In this section, the uses hierarchy between modules is
 provided. \citet{Parnas1978} said of two programs A and B that A {\em uses} B if
 correct execution of B may be necessary for A to complete the task described in
@@ -488,10 +511,106 @@ arrows in the diagram typically correspond to the presence of import statement.}
 needed. Drawings, Sketches, Figma}
 
 \section{Design of Communication Protocols}
+\label{sec:communication}
+\begingroup
+\setlength{\emergencystretch}{3em}
+Lake's modules will use a variety of communication protocols and interfaces to allow the different modules to communicate with one another as well as handle communication failures.
 
-\wss{If there is communication between hardware and software, it may be necessary 
-to explain the design of the communication protocol.  This section should be filled 
-in with NA if it is not appropriate for a given project.}
+\begin{center}
+\small
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.29\textwidth}>{\raggedright\arraybackslash}p{0.19\textwidth}>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Components} & \textbf{Interface} & \textbf{Contract} \\
+\midrule
+External API client and leader Coordinator & OpenAI-compatible HTTP API &
+Submit a request; receive generated text (streamed when requested) or an API
+error through \texttt{serveRequest}. \\
+Lake Client and local Coordinator & REST &
+Select devices and model; obtain status or errors through
+\texttt{inviteDevices}, \texttt{loadModel}, \texttt{unloadModel},
+\texttt{getStatus}. \\
+Leader Coordinator and node Core & Inter-node gRPC &
+Discover, invite, assign partitions, query health and release partitions. \\
+Neighbouring Tensor I/O modules & Inter-node gRPC &
+Transfer compressed tensors while retaining request association. \\
+Inference Engine and GGML & Rust-to-C FFI &
+Read model data and execute the local partition. \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{Discovery and Joining}
+
+The leader scans for devices running Lake and invites only operator-selected
+devices (FR.S.1.4, FR.S.1.18). Core's \texttt{answerScan} takes
+\texttt{from} (the scanning device's ID) and returns the responding device's
+identifier. Its \texttt{receiveInvite} operation takes \texttt{from}
+(the inviting leader's device ID), records the invitation, or raises
+\texttt{Busy} for membership under another leader. The local Lake Client
+displays the invitation and calls \texttt{Core.answerInvite} with
+\texttt{ok} (the owner's accept or decline decision). Participation requires acceptance; inference waits for
+selected followers' confirmations (FR.S.1.17, FR.S.1.20--1.21).
+
+\subsection{Partition Assignment and Readiness}
+
+First, the Coordinator obtains a scheme from Partition. It calls Core's
+\texttt{loadPartition} with arguments \texttt{file} (model-file reference), $a$ (partition bound 1), $b$ (partition bound 2),
+\texttt{prev} (previous neighbour device ID) and \texttt{next} (next neighbour device ID). Core configures the local
+Tensor I/O neighbours and loads the Inference Engine. The operation
+returns after loading, or reports \texttt{LoadFailed}; calls from a device
+other than the recorded leader raise \texttt{NotLeader}. Work is dispatched
+only after nodes confirm the assignment applicable to that work (SR0-2).
+
+Core calls the Inference Engine's lifecycle operations:
+\texttt{init}, \texttt{load}, \texttt{start}, \texttt{stop},
+\texttt{endRequest}, \texttt{report} and \texttt{unload}. Loading or unloading while running is
+rejected, so Core must stop execution before replacing a partition. It frees
+a completed request's KV cache through \texttt{endRequest} with argument
+$r$ (the completed request's ID).
+
+\subsection{Inference Requests and Tensor Transfer}
+
+The \texttt{serveRequest} operation accepts a request containing
+\texttt{messages} (conversation messages), \texttt{maxTokens} (the maximum
+number of tokens to generate) and \texttt{temperature} (the sampling temperature).
+The engine receives a logical $\mathit{Step}=(r,x,\tau)$ from Tensor I/O,
+containing $r$ (request ID), $x$ (GGML-owned tensor) and $\tau$ (sampling
+temperature). Each request has a separate KV cache.
+The first partition consumes token IDs, intermediate partitions pass their
+output tensors downstream, and the final partition samples the next token at
+$\tau$. Output tokens feed back to the first partition until completion
+and are returned through the leader's API (SRS S.4).
+
+Tensor I/O compresses outgoing tensors, receives and decompresses incoming
+tensors, and preserves request association (FR.S.4.1--4.6). The receiving
+Tensor I/O validates incoming data before it is used for inference and requests
+retransmission of corrupted transfers (SRS S.5, SR3-1). The Inference Engine
+discards a step with an invalid shape or a context-limit violation, together
+with that request's KV cache.
+
+\subsection{Health, Failure and Shutdown}
+
+Coordinator queries Core's \texttt{reportHealth} at
+\textit{HEALTH\_INTERVAL}; Core obtains local engine measurements and Tensor
+I/O supplies connection measurements. Health monitoring covers free
+GPU-accessible memory, token rate, partition latency, RTT, network throughput
+and backpressure (FR.S.1.2--1.3). Stale reports are excluded from availability
+decisions (SR0-1).
+
+Communication timeouts invoke the SRS recovery policy (SR4-1). Failed links
+are reconnected or the network is rebuilt; affected requests are retried,
+and exhaustion of \textit{RECOVERY\_LIMIT} yields an API failure. A partial
+response must remain visibly incomplete. After \textit{LEADER\_TIMEOUT} without
+a health query, \texttt{Core.checkLeader} initiates local shutdown; leader
+election is not supported. Normal shutdown releases partitions
+and closes connections (SRS S.4--S.5).
+
+Request data stays within the Lake network and is excluded from diagnostic
+logs (NFR.S.11, SR5-2). Lake assumes trusted devices and a trusted local network;
+owner consent and recorded-leader checks do not provide cryptographic
+authentication.
+
+\endgroup
 
 \section{Database Design}
 
@@ -529,6 +648,10 @@ it is not appropriate for a given project.}
     traceability table.
 \end{itemize}
 
+ChatGPT gpt-6.1-sol was used to review an initial human written draft for the partition 
+module and section 11, then was used to translate the draft onto the LaTeX document and 
+refine wording and sentence structure.
+
 \subsection{Verification of AI-Generated Content}
 
 We checked that every SRS likely change has a matching anticipated change, that
@@ -537,6 +660,8 @@ trace table exist in the SRS. Content generated for the Lake Client entry was
 proofread and verified to confirm accuracy and alignment with existing team
 objectives and documentation.
 
+Partition module and section 11 content was verified to ensure no technical details 
+drifted from the original human written base point.
 \newpage{}
 
 \bibliographystyle {plainnat}
