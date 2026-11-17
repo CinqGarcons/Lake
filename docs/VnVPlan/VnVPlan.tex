@@ -12,9 +12,18 @@
     urlcolor=blue
 }
 \usepackage[round]{natbib}
+\usepackage{longtable}
+\usepackage{placeins}
+\usepackage{booktabs}
+\usepackage{float}
 
 \input{../Comments.text}
 \input{../Common.text}
+
+% Zero-size, empty anchor placed before the term, so it can't shift the text
+\providecommand{\glsentry}[2]{}
+\renewcommand{\glsentry}[2]{\raisebox{0pt}[0pt][0pt]{\hypertarget{gls:#1}{}}#2}
+\providecommand{\glink}[2]{\hyperlink{gls:#1}{#2}}
 
 \begin{document}
 
@@ -28,111 +37,133 @@
 
 \section*{Revision History}
 
-\begin{tabularx}{\textwidth}{p{3cm}p{2cm}X}
-\toprule {\bf Date} & {\bf Version} & {\bf Notes}\\
+\begin{tabularx}{\textwidth}{llX}
+\toprule
+\textbf{Date} & \textbf{Developer(s)} & \textbf{Change}\\
 \midrule
-Date 1 & 1.0 & Notes\\
-Date 2 & 1.1 & Notes\\
+November 2, 2026 & All team members & Initial revision\\
 \bottomrule
 \end{tabularx}
-
-~\\
-\wss{The intention of the VnV plan is to increase confidence in the software.
-However, this does not mean listing every verification and validation technique
-that has ever been devised.  The VnV plan should also be a \textbf{feasible}
-plan. Execution of the plan should be possible with the time and team available.
-If the full plan cannot be completed during the time available, it can either be
-modified to ``fake it'', or a better solution is to add a section describing
-what work has been completed and what work is still planned for the future.}
-
-\wss{The VnV plan is typically started after the requirements stage, but before
-the design stage.  This means that the sections related to unit testing cannot
-initially be completed.  The sections will be filled in after the design stage
-is complete.  the final version of the VnV plan should have all sections filled
-in.}
 
 \newpage
 
 \tableofcontents
 
 \listoftables
-\wss{Remove this section if it isn't needed}
-
-\listoffigures
-\wss{Remove this section if it isn't needed}
 
 \newpage
 
 \section{Symbols, Abbreviations, and Acronyms}
 
 \renewcommand{\arraystretch}{1.2}
-\begin{tabular}{l p{10cm}} 
-  \toprule		
-  \textbf{Symbol/Acronym} & \textbf{Description}\\
-  \midrule 
-  SOLID\label{SOLID} & Acronym for specifying design principles. Stands for Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, and Dependency Inversion. \\
+\begin{longtable}{@{}p{0.3\textwidth} p{\dimexpr0.7\textwidth-2\tabcolsep\relax}@{}}
+  \toprule
+  \textbf{Term} & \textbf{Description}\\
+  \midrule
+  \endfirsthead
+  \toprule
+  \textbf{Term} & \textbf{Description}\\
+  \midrule
+  \endhead
   \bottomrule
-\end{tabular}\\
+  \endfoot
+  \bottomrule
+  \endlastfoot
 
-\wss{symbols, abbreviations, or acronyms --- you can simply reference the SRS
-  \citep{SRS} tables, if appropriate}
-
-\wss{Remove this section if it isn't needed}
+  \glsentry{cpu}{CPU} & Central processing unit. A device's general-purpose processor.\\
+  \glsentry{gguf}{GGUF} & The file format used by llama.cpp and ggml to store a model's weights, tokeniser, and metadata. Lake only accepts GGUF models.\\
+  \glsentry{gpl}{GPL} & GNU General Public License. The free software licence, version 3.0, that Lake is released under.\\
+  \glsentry{gpu}{GPU} & Graphics processing unit. A device's parallel processor, which does the arithmetic of inference.\\
+  \glsentry{greedy}{Greedy decoding} & Always choosing the most probable next token, so the same prompt gives the same output every time.\\
+  \glsentry{rc}{Release candidate} & A build of Lake that is intended to become a release or be used in a demonstration. The manual tests marked to run per release candidate are run on it before it is tagged.\\
+  SOLID\label{SOLID} & Acronym for specifying design principles. Stands for Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, and Dependency Inversion. \\
+\end{longtable}
 
 \newpage
 
 \pagenumbering{arabic}
 
-This document ... \wss{provide an introductory blurb and roadmap of the
-  Verification and Validation plan}
+This document is the Verification and Validation (V\&V) Plan for \progname{}.
+The General Information section describes what is being tested and why. The
+Plan section covers how we verify the SRS, the design, this plan, and the
+implementation, and how we validate the system with users. The System Tests
+section lists the tests for the functional, nonfunctional, and safety
+requirements and traces each test to a requirement. The Unit Test Description
+will be completed after the design documents. The appendix holds the symbolic
+parameters and the usability survey.
 
 \section{General Information}
 
+This plan covers the core release of \progname{} as scoped in the SRS.
+
 \subsection{Summary}
 
-\wss{Say what software is being tested.  Give its name and a brief overview of
-  its general functions.}
+The software under test is \progname{}, which runs one large language model
+(LLM) across several consumer devices on a local network. \progname{} splits
+the model by layer and gives each device a consecutive range of layers. The
+operator forms a Lake network from the Lake Client, loads a
+GGUF model, and sends prompts through an OpenAI-compatible API. When a node
+joins or leaves, \progname{} reassigns the layers and keeps serving requests.
+
+All five components are in scope: the Coordinator, the Model Partitioner, the
+Inference Engine, Tensor I/O, and the Lake Client.
 
 \subsection{Objectives}
 
-\wss{State what is intended to be accomplished.  The objective will be around
-  the qualities that are most important for your project.  You might have
-  something like: ``build confidence in the software correctness,''
-  ``demonstrate adequate usability.'' etc.  You won't list all of the qualities,
-  just those that are most important.}
+The qualities we most need confidence in are output correctness, privacy,
+reliability when devices come and go, and performance.
 
-\wss{You should also list the objectives that are out of scope.  You don't have 
-the resources to do everything, so what will you be leaving out.  For instance, 
-if you are not going to verify the quality of usability, state this.  It is also 
-worthwhile to justify why the objectives are left out.}
+Splitting a model must not change what it produces. The split model's
+benchmark scores must stay within \textit{BENCH\_RATIO} of the unsplit
+model's. Related to NFR.S.6.
 
-\wss{The objectives are important because they highlight that you are aware of 
-limitations in your resources for verification and validation.  You can't do everything, 
-so what are you going to prioritize?  As an example, if your system depends on an 
-external library, you can explicitly state that you will assume that external library 
-has already been verified by its implementation team.}
+No node may keep request data after a request finishes, and nothing from a request may
+leave the Lake network except the response to the client. Related to
+NFR.S.10, NFR.S.11, and SR5-2.
+
+For reliability, \progname{} must keep serving requests when a node fails,
+leaves, or joins, and must refuse a model that would run a node out of memory.
+Related to FR.S.1.10 to FR.S.1.12, SR1-3, and SR2-1.
+
+For performance, a Lake network must run a model too large for its biggest
+node, and the number of requests it serves at once within
+\textit{MAX\_DEGRADATION} must grow with the number of nodes. Single-request
+speed is measured but has no pass threshold, since a split model is not
+expected to beat one device on a model that already fits. Related to NFR.S.4
+and NFR.S.5.
+
+Usability is checked with a session with new users and the survey in the
+appendix. For platforms, we test the operating system, CPU, and GPU combinations
+the team owns and report the rest as untested in the V\&V Report.
+
+We test how \progname{} uses ggml and llama.cpp, not the libraries
+themselves. The content a correctly running model generates is also out of
+scope. The stretch goals (encryption,
+authentication, wireless links, and smartphones) are not tested this year, and
+neither are attacks from inside the local network.
 
 \subsection{Custom Documents}
 
-\wss{Summarize the CDs (Custom Documents) that were tackled by this project.  CDs 
-can include usability testing, code walkthroughs, user documentation, formal
-proof, GenderMag personas, Design Thinking, etc.  CDs should have already
-been approved by the course instructor as included in your problem statement.
-You can use a pull request to update your CDs (in TeamComposition.csv or
-Repos.csv) if your plan changes as a result of the VnV planning exercise.}
+Our custom documents are a Design Thinking Report in the fall and a Performance
+Report in the winter \citep{ProblemStatement}. Software validation checks the
+system against the user needs recorded in the Design Thinking Report. The
+Performance Report measures model size, token throughput, latency, and
+reassignment time beyond the SRS targets, starting from the results of the
+performance tests in this plan.
 
 \subsection{Relevant Documentation}
 
-\wss{Reference relevant documentation.  This will definitely include your SRS
-  and your other project documents (design documents, like MG, MIS, etc).  You
-  can include these even before they are written, since by the time the project
-  is done, they will be written.  You can create BibTeX entries for your
-  documents and within those entries include a hyperlink to the documents.}
+Every system test traces to a requirement in the SRS \citep{SRS}, which also
+defines the symbolic constants used here. The Hazard Analysis
+\citep{HazardAnalysis} produced the safety requirements SR0-1 to SR5-2, and
+each has at least one test. Five of its 12 failure modes are in communication
+between nodes, so most of our fault-injection tests target that
+area.
 
-\citet{SRS}
-
-\wss{Don't just list the other documents.  You should explain why they are relevant and 
-how they relate to your VnV efforts.}
+The Development Plan \citep{DevelopmentPlan} sets the linters, test frameworks,
+and continuous integration pipeline our automated tests use. Unit tests will be written against the
+Module Guide \citep{MG} and Module Interface Specification \citep{MIS} once
+they exist.
 
 \section{Plan}
 
@@ -141,7 +172,7 @@ requirements, design, implementation, and testing are each verified throughout t
 
 \hyperref[sec:VnVTeam]{3.1} begins by establishing team roles specifically for project verification. Following this,
 \hyperref[sec:SRSVer]{3.2}, \hyperref[sec:DesignVer]{3.3}, and \hyperref[sec:VnVVer]{3.4} specify how the team will verify
-various non-code artifacts - the \citet{SRS}, design, and the verification and validation plan (this document).
+various non-code artifacts - the SRS \citep{SRS}, design, and the verification and validation plan (this document).
 
 Finally, \hyperref[sec:ImpVer]{3.5} - Implementation Verification, \hyperref[sec:AutoTestVer]{3.6} - Automated Testing and
 Verification Tools, and \hyperref[sec:SoftVal]{3.7} - Software Validation provide further specification on how code artifacts
@@ -150,7 +181,7 @@ will be validated and verified.
 \subsection{Verification and Validation Team}
 \label{sec:VnVTeam}
 
-The team will take on overall responsibility for the execution of the Verification and Validation Team, based on the following
+The team will take on overall responsibility for the execution of Verification and Validation, based on the following
 roles and responsibilities.
 
 \begin{table}[H]
@@ -232,312 +263,906 @@ In order to verify the quality of the team's verification and validation plan, t
 \begin{itemize}
   \item \textbf{Internal Review}: Throughout the preparation of the document, the team will review individual document sections and how they connect to guarantee quality and consistency.
   \item \textbf{Peer Review}: The team will use the peer review process to catch additional issues or inconsistencies. This will be used to complement the completed internal review.
-  \item \textbf{Ad-Hoc Team Meeting}: The team will schedule a one-time meeting after the delivery of the VnV plan to assess its feasibility, as well as assigned responsibilities to each member.
+  \item \textbf{Ad-Hoc Team Meeting}: The team will schedule a one-time meeting after the delivery of the VnV plan to assess its feasibility, as well as assign responsibilities to each member.
   This meeting will aim to assess the effectiveness and practicality of the current plan, and make changes if required.
 \end{itemize}
 
 \subsection{Implementation Verification}
 \label{sec:ImpVer}
+The implementation will utilize a combination of code review, tests, benchmarks, and issue tracking methods to verify correctness and performance in an organized and auditable manner.
+\begin{itemize}
+  \item \textbf{Code review:}
+  GitHub pull requests will be created for code review following the Development Plan's process of approving code changes. At least two reviewers will check for correctness, error handling, and adequate tests for the code changes. A max of 400 lines added per pull request constraint is added to ensure each pull request is auditable for reviewers, with larger features split into several pull requests.
 
-\wss{You should at least point to the tests listed in this document and the unit
-  testing plan.}
+  \item \textbf{Unit and integration tests:}
+  Unit tests will be used to ensure correctness in areas such as model layer allocation constraints, lifecycle transitions of node health, and message format validation to ensure compatibility with interfaces (e.g., the OpenAI API spec). Integration tests will be used to validate runtime behavior of running multiple node processes on a single machine with a small model to ensure functional end to end behavior. Both checks will run in the CI using GitHub runners, configured such that the relevant tests respective to the code changes are run.
 
-\wss{In this section you would also give any details of any plans for static
-  verification of the implementation.  Potential techniques include code
-  walkthroughs, code inspection, static analyzers, etc.}
+  \item \textbf{Fault Handling:}
+  Tests will introduce faults in lifecycle and data states to inject stale health data, unavailable nodes, corrupted or incomplete tensor messages, and communication delays. The results will be checked against the defined safety requirements in bounded recovery, explicit failures, and filtration of sensitive data in diagnostic logs.
 
-\wss{The final class presentation in CAS 741 could be used as a code
-walkthrough.  There is also a possibility of using the final presentation (in
-CAS741) for a partial usability survey.}
+  \item \textbf{System Testing:}
+  Tests for Lake's end-to-end behavior that may require multiple devices, various supported GPU backends and operating systems, and varying degrees of system capabilities will be run on team hardware before major releases or demonstrations. System test coverage will identify the operating system, CPU architecture, GPU backends, and system capability metrics (RAM/VRAM, CPU/GPU performance). Combinations of system configurations and capabilities that are are not tested will be reported as untested in the V\&V report. Each recorded result will also identify the commit of the current code version, the model as well its quantization, node configuration, and test inputs for repeatability.
+
+  \item \textbf{Performance Verification:}
+  Performance metrics such as Lake's capacity for model size, concurrent request throughput, and output quality will be used to verify that optimizations result in quantitative performance gain, and that changes do not regress performance, as specified in Section 4.2.
+
+  \item \textbf{Defect Tracking:}
+  Failed CI checks will block pull requests from being merged. If review findings are too large in scope to be addressed in the pull request, they will instead be filed as GitHub issues. Regression tests will be added when a failure is identified to prevent it from recurring.
+\end{itemize}
 
 \subsection{Automated Testing and Verification Tools}
 \label{sec:AutoTestVer}
+The following testing and verification tools will be used in accordance with the technologies specified in the Development Plan.
+\begin{itemize}
+  \item \textbf{Testing frameworks:}
+  \texttt{pytest}~\citep{Pytest} will be used for Python components, \texttt{cargo test}~\citep{CargoTest} for Rust components, and \texttt{Vitest}~\citep{Vitest} for TypeScript components. Tests will cover behavior around the components of the coordinator, model partitioner, inference engine, Tensor I/O, and the Lake client.
 
-\wss{What tools are you using for automated testing.  Likely a unit testing
-  framework and maybe a profiling tool, like ValGrind.  Other possible tools
-  include a static analyzer, make, continuous integration tools, test coverage
-  tools, etc.  Explain your plans for summarizing code coverage metrics.
-  Linters are another important class of tools.  For the programming language
-  you select, you should look at the available linters.  There may also be tools
-  that verify that coding standards have been respected, like flake9 for
-  Python.}
+  \item \textbf{Static checks:}
+  \texttt{Ruff}~\citep{Ruff} will be used for Python code, \texttt{Clippy}~\citep{Clippy} and \texttt{rustfmt}~\citep{Rustfmt} will be used for Rust code, and \texttt{ESLint}~\citep{ESLint} and \texttt{Prettier}~\citep{Prettier} will be used for TypeScript code. These checks will be run on commit hooks and pull request CI.
 
-\wss{If you have already done this in the development plan, you can point to
-that document.}
+  \item \textbf{Continuous integration:}
+  GitHub Actions~\citep{GitHubActions} will be used to run checks and automated tests on Linux, Windows, and macOS runners. To minimize CI minutes, applicable tests will use lightweight models across local processes. Tests requiring specific hardware that GitHub runners do not provide will instead be run on team hardware outside of the CI.
 
-\wss{The details of this section will likely evolve as you get closer to the
-  implementation.}
+  \item \textbf{Code coverage:}
+  \texttt{pytest-cov}~\citep{PytestCov} will be used for Python code coverage, and \texttt{cargo-llvm-cov}~\citep{CargoLlvmCov} will be used for Rust code coverage. Code coverage reports will be generated that summarize which components and code are not exercised by a test suite.
+
+  \item \textbf{Memory and network checks:}
+  \texttt{AddressSanitizer}~\citep{AddressSanitizer} will be used for verifying unsafe \texttt{ggml}~\citep{Ggml} integrations. \texttt{tc netem}~\citep{TcNetem} on Linux will be used for packet loss and delays as specified in Section 4.2.
+
+  \item \textbf{Performance comparisons:}
+  Scripts will be used to measure concurrent request throughput, as well as compare model accuracy scores against the same model served by \texttt{llama-server}~\citep{LlamaCpp} as defined in Section 4.2.
+\end{itemize}
 
 \subsection{Software Validation}
 \label{sec:SoftVal}
+Software validation assesses if Lake meets the needs described by the SRS goals, stakeholder interview, and user profiles. In addition to checking these requirements, the team will gather feedback on whether the workflow and user experience are useful and intuitive.
+\begin{itemize}
+  \item \textbf{Task-based user sessions:}
+  Participants who have not used Lake, such as other students outside of the capstone team, will complete tasks to set up and utilize the Lake network as specified in Section 6.2. These sessions will utilize the participant count and time limits specified in Section 6.1. With the data recorded from these sessions, the team will gauge whether users can correctly and easily configure Lake and understand how participating devices work, as well as determine the throughput and bottlenecks of the system.
 
-\wss{If there is any external data that can be used for validation, you should
-  point to it here.  If there are no plans for validation, you should state that
-  here.}
+  \item \textbf{Demonstrations of benefits:}
+  During the PoC and revision 0 demonstration, the team will demonstrate the functionality of Lake at its current stage to collect feedback on its usefulness and benefits. Demonstrations will show a client that is connected to the Lake API to access a model via a pooled device network, and measurements across concurrent requests, model capacity, and output quality will be made, corresponding to the tests in Section 4. Participants of the Lake network at this stage can also comment on if the response times and token throughput of the model are acceptable for their use case.
 
-\wss{You might want to use review sessions with the stakeholder to check that
-the requirements document captures the right requirements.  Maybe task based
-inspection?}
+  \item \textbf{Stakeholder interview:}
+  Subject to availability of the previously interviewed AI developer from the SRS, the team will seek follow-up feedback. The follow-up will involve the ergonomics of integrating Lake into the company's workflow, the implementation of the security and telemetry requirements, and any limitations that would prevent operation at their company.
 
-\wss{For those capstone teams with an external supervisor, the Rev 0 demo should 
-be used as an opportunity to validate the requirements.  You should plan on 
-demonstrating your project to your supervisor shortly after the scheduled Rev 0 demo.  
-The feedback from your supervisor will be very useful for improving your project.}
-
-\wss{For teams without an external supervisor, user testing can serve the same purpose 
-as a Rev 0 demo for the supervisor.}
-
-\wss{This section might reference back to the SRS verification section.}
+\end{itemize}
+Feedback from the software validation will be recorded as GitHub issues and used to iterate on the implementation or revise requirements.
 
 \section{System Tests}
 
-\wss{There should be text between all headings, even if it is just a roadmap of
-the contents of the subsections.}
+This section contains system-level tests to comprehensively validate all functional and non-functional
+requirements from the Lake SRS, and the safety requirements from the Hazard Analysis. These tests are intended to be run once the Lake system is complete, using
+a variety of models and devices to simulate real-world use.
 
-\subsection{Tests for Functional Requirements}
+\subsection{Tests for Functional Requirements}\label{sec:fr-tests}
 
-\wss{Subsets of the tests may be in related, so this section is divided into
-  different areas.  If there are no identifiable subsets for the tests, this
-  level of document structure can be removed.}
+The tests below are grouped by which functional modules are primarily tested
+by each test. Each test lists which functional requirements from Section S.2 of the SRS
+they verify to ensure full coverage of all SRS S.2 functional requirements with the exception of:
+\begin{itemize}
+	\item \textit{FR.S.2.3} (Model Partitioner): Testing true equivalency requires deeper access to internal graph structures
+		than is accessible to a system-level test.
+\end{itemize}
 
-\wss{Include a blurb here to explain why the subsections below
-  cover the requirements.  References to the SRS would be good here.}
+\vspace{5mm}
 
-\subsubsection{Area of Testing1}
+\noindent Unless otherwise stated, the following can be assumed for all tests in \autoref{sec:fr-tests}:
+\begin{itemize}
+	\item The model loaded in testing is \textit{SMALL\_MODEL}, a \glink{gguf}{GGUF} file defined in
+		Section~\ref{sec:symbolic-parameters}.
+	\item Multiple nodes are simulated using multiple processes on the same machine.
+	\item Network connections are simulated between processes using the loopback interface.
+	\item Network throttling/instability will be simulated using tc netem \citep{TcNetem}.
+	\item Tests outside of \autoref{subsec:lake-client-system-tests} performing actions typically done through the Lake
+		Client, are performed by sending requests through the REST API used by the Lake Client (see SRS Section
+		S.3). This allows said tests to be automated by avoiding interaction with the UI.
+\end{itemize}
 
-\wss{It would be nice to have a blurb here to explain why the subsections below
-  cover the requirements.  References to the SRS would be good here.  If a section
-  covers tests for input constraints, you should reference the data constraints
-  table in the SRS.}
-		
-\paragraph{Title for Test}
-
+\subsubsection{Coordinator (S.2.1)}
 \begin{enumerate}
-
-\item{test-id1\\}
-
-Control: Manual versus Automatic
-					
-Initial State: 
-					
-Input: 
-					
-Output: \wss{The expected result for the given inputs.  Output is not how you
-are going to return the results of the test.  The output is the expected
-result.}
-
-Test Case Derivation: \wss{Justify the expected value given in the Output field}
-					
-How test will be performed: 
-					
-\item{test-id2\\}
-
-Control: Manual versus Automatic
-					
-Initial State: 
-					
-Input: 
-					
-Output: \wss{The expected result for the given inputs}
-
-Test Case Derivation: \wss{Justify the expected value given in the Output field}
-
-How test will be performed: 
-
+	\item{T.FR.CRD.1}\label{T.FR.CRD.1} \\
+		\textbf{Control}: Automatic \\
+		\textbf{Initial State}: Lake loaded on \textit{MIN\_NODES} devices. \\
+		\textbf{Input}: On the leader device, invite the other device to be part
+		of a cluster. On each other device, accept the request. \\
+		\textbf{Output}: Both devices report being in the network, and report being
+		ready to load a model. \\
+		\textbf{Derivation}: Verifies \textit{FR.S.1.4}, \textit{FR.S.1.5}, \textit{FR.S.1.15},
+		\textit{FR.S.1.17}, \textit{FR.S.1.18}, \textit{FR.S.1.20}, \textit{FR.S.1.21},
+		\textit{FR.S.5.1}, \textit{FR.S.5.2}, \textit{FR.S.5.7}, \textit{FR.S.1.16}, \textit{FR.S.4.1}.
+	\item{T.FR.CRD.2}\label{T.FR.CRD.2} \\
+		\textbf{Control}: Automatic \\
+		\textbf{Initial State}: Lake network created with \textit{MIN\_NODES} devices. \\
+		\textbf{Input}: Load \glink{gguf}{GGUF} file into network. \\
+		\textbf{Output}: All devices report successful loading, and report ready for inference. \\
+		\textbf{Derivation}: Verifies \textit{FR.S.1.1}, \textit{FR.S.1.6}, \textit{FR.S.1.8},
+		\textit{FR.S.1.19}, \textit{FR.S.3.1}.
+	\item{T.FR.CRD.3}\label{T.FR.CRD.3} \\
+		\textbf{Control}: Automatic \\
+		\textbf{Initial State}: Model loaded and serving requests in Lake network with \textit{MIN\_NODES}
+		devices. \\
+		\textbf{Input}: Reduce the throughput of a follower node below \textit{FAIL\_THRESHOLD}. \\
+		\textbf{Output}: The Lake network rebuilds and redistributes the model across the nodes,
+		excluding the modified node.
+		Any in-progress requests are retried, and the network begins accepting new requests. \\
+		\textbf{Derivation}: Verifies \textit{FR.S.1.7}, \textit{FR.S.1.10}, \textit{FR.S.1.11},
+		\textit{FR.S.1.13}, \textit{FR.S.1.22}, \textit{FR.S.1.23}, \textit{FR.S.1.2},
+		\textit{FR.S.1.3}, \textit{FR.S.3.4}, \textit{FR.S.4.5}.
+	\item{T.FR.CRD.4}\label{T.FR.CRD.4} \\
+		\textbf{Control}: Automatic \\
+		\textbf{Initial State}: Model loaded and serving requests in Lake network with \textit{MIN\_NODES}
+		devices. \\
+		\textbf{Input}: Add a new device to the Lake network. \\
+		\textbf{Output}: The Lake network rebuilds and redistributes the model across the nodes,
+		including the newly added node. Any in-progress requests are retried, and the network begins
+		accepting new requests.\\
+		\textbf{Derivation}: Verifies \textit{FR.S.1.12}, \textit{FR.S.1.13}.
+	\item{T.FR.CRD.5}\label{T.FR.CRD.5} \\
+		\textbf{Control}: Automatic \\
+		\textbf{Initial State}: Model loaded in Lake network with \textit{MIN\_NODES} devices. \\
+		\textbf{Input}: Leader node is killed. \\
+		\textbf{Output}: After \textit{LEADER\_TIMEOUT}, the Lake network disbands and each
+		follower node unloads its model partition. \\
+		\textbf{Derivation}: Verifies \textit{FR.S.1.24}, \textit{FR.S.1.25}, \textit{SR4-2}.
+\end{enumerate}
+\subsubsection{Model Partitioner (S.2.2)}
+\begin{enumerate}
+	\item{T.FR.MP.1}\label{T.FR.MP.1} \\
+		\textbf{Control}: Automatic \\
+		\textbf{Initial State}: Lake network created with \textit{MIN\_NODES} devices. \\
+		\textbf{Input}: Load \glink{gguf}{GGUF} file into network. \\
+		\textbf{Output}: Each device $i$ reports Lake's \glink{gpu}{GPU}-accessible memory usage of not more
+		than $M_i(1 - \textit{MEMORY\_MARGIN})$, where $M_i$ is the device's free
+		\glink{gpu}{GPU}-accessible memory before loading. The ratio of the usage of
+		\glink{gpu}{GPU}-accessible memory between devices is proportional to device capabilities. \\
+		\textbf{Derivation}: Verifies \textit{FR.S.2.1}, \textit{FR.S.2.4}, \textit{FR.S.1.8}.
+	\item{T.FR.MP.2}\label{T.FR.MP.2} \\
+		\textbf{Control}: Automatic \\
+		\textbf{Initial State}: Lake network created with \textit{MIN\_NODES} devices. \\
+		\textbf{Input}: Load a \glink{gguf}{GGUF} file where $S_{\mathrm{model}} + S_{\mathrm{KV}} >
+		(1 - \textit{MEMORY\_MARGIN})\sum_i M_i$, where $S_{\mathrm{model}}$ is the size of the
+		model weights, $S_{\mathrm{KV}}$ the size of the KV cache for \textit{CONTEXT\_MAX} tokens, and
+		$M_i$ the free \glink{gpu}{GPU}-accessible memory of device $i$. \\
+		\textbf{Output}: Leader node reports that there is no valid partition across the network. \\
+		\textbf{Derivation}: Verifies \textit{FR.S.2.2}.
+\end{enumerate}
+\subsubsection{Inference Engine (S.2.3)}
+\begin{enumerate}
+	\item{T.FR.IE.1}\label{T.FR.IE.1} \\
+		\textbf{Control}: Automatic \\
+		\textbf{Initial State}: Lake network created and model file loaded with \textit{MIN\_NODES} devices. \\
+		\textbf{Input}: Send inference request to OpenAI compatible API. \\
+		\textbf{Output}: Network outputs model response via OpenAI compatible API. \\
+		\textbf{Derivation}: Verifies \textit{FR.S.3.2}, \textit{FR.S.3.3}, \textit{FR.S.4.3}, \textit{FR.S.4.4},
+		\textit{FR.S.1.9}.
+	\item{T.FR.IE.2}\label{T.FR.IE.2} \\
+		\textbf{Control}: Automatic \\
+		\textbf{Initial State}: Lake network created and model file loaded with \textit{MIN\_NODES} devices. \\
+		\textbf{Input}: Send concurrent inference requests to OpenAI compatible API. \\
+		\textbf{Output}: Network outputs model responses concurrently via OpenAI compatible API. \\
+		\textbf{Derivation}: Verifies \textit{FR.S.3.5}, \textit{FR.S.4.6}, \textit{FR.S.1.14}.
+\end{enumerate}
+\subsubsection{Tensor I/O (S.2.4)}
+\begin{enumerate}
+	\item{T.FR.TIO.1}\label{T.FR.TIO.1} \\
+		\textbf{Control}: Manual \\
+		\textbf{Initial State}: Lake network created and serving requests with \textit{MIN\_NODES} devices. \\
+		\textbf{Input}: Reduce the throughput of a connection between nodes by \textit{THROUGHPUT\_REDUCTION}. \\
+		\textbf{Output}: Token throughput initially drops, then \glink{cpu}{CPU} usage increases on both the
+		sending and receiving devices due to increasing compression. Throughput then increases. \\
+		\textbf{Derivation}: Verifies \textit{FR.S.4.2}.
+\end{enumerate}
+\subsubsection{Lake Client (S.2.5)}\label{subsec:lake-client-system-tests}
+\begin{enumerate}
+	\item{T.FR.LCLI.1}\label{T.FR.LCLI.1} \\
+		\textbf{Control}: Manual \\
+		\textbf{Initial State}: Lake running on \textit{MIN\_NODES} devices on the same network. \\
+		\textbf{Input}: User scans for devices, selects the desired devices, and creates a network with them.
+		The user then accepts the join requests on each device's Lake Client. \\
+		\textbf{Output}: All devices report successfully forming a network. \\
+		\textbf{Derivation}: Verifies \textit{FR.S.5.1}, \textit{FR.S.5.2}, \textit{FR.S.5.3}, \textit{FR.S.5.7}.
+	\item{T.FR.LCLI.2}\label{T.FR.LCLI.2} \\
+		\textbf{Control}: Manual \\
+		\textbf{Initial State}: Lake running and model loaded on \textit{MIN\_NODES} devices on the same network. \\
+		\textbf{Input}: Inference request is issued through the OpenAI compatible API. \\
+		\textbf{Output}: Performance metrics for the network and each node are displayed by
+		the Lake Client. The weakest links in the system forming bottlenecks are highlighted by the Lake Client. \\
+		\textbf{Derivation}: Verifies \textit{FR.S.5.5}, \textit{FR.S.5.6}.
+	\item{T.FR.LCLI.3}\label{T.FR.LCLI.3} \\
+		\textbf{Control}: Manual \\
+		\textbf{Initial State}: Lake network created with \textit{MIN\_NODES} devices. \\
+		\textbf{Input}: Load a \glink{gguf}{GGUF} file where $S_{\mathrm{model}} + S_{\mathrm{KV}} >
+		(1 - \textit{MEMORY\_MARGIN})\sum_i M_i$, where $S_{\mathrm{model}}$ is the size of the
+		model weights, $S_{\mathrm{KV}}$ the size of the KV cache for \textit{CONTEXT\_MAX} tokens, and
+		$M_i$ the free \glink{gpu}{GPU}-accessible memory of device $i$. \\
+		\textbf{Output}: Lake Client reports that there is no valid partition across the network. \\
+		\textbf{Derivation}: Verifies \textit{FR.S.5.4}.
 \end{enumerate}
 
-\subsubsection{Area of Testing2}
 
-...
 
 \subsection{Tests for Nonfunctional Requirements}
+\label{sec:nfr-tests}
+\begingroup
+\raggedright
+\setlength{\parindent}{15pt}
 
-\wss{The nonfunctional requirements for accuracy will likely just reference the
-  appropriate functional tests from above.  The test cases should mention
-  reporting the relative error for these tests.  Not all projects will
-  necessarily have nonfunctional requirements related to accuracy.}
+This section gives the system tests for the nonfunctional requirements in SRS
+S.2 (NFR.S.1 to NFR.S.15) and the Environmental Requirements (NFR.E.1 to
+NFR.E.8). The tests follow the verification groups in SRS S.8, and they are
+grouped by the same categories the SRS uses. The safety requirements are tested
+in Section~\ref{sec:sr-tests}.
 
-\wss{For some nonfunctional tests, you won't be setting a target threshold for
-passing the test, but rather describing the experiment you will do to measure
-the quality for different inputs.  For instance, you could measure speed versus
-the problem size.  The output of the test isn't pass/fail, but rather a summary
-table or graph.}
+Each test uses one of the three test models in
+Table~\ref{tab:test-models}. Unless a test says otherwise, generation uses \glink{greedy}{greedy decoding}, the
+\textit{TEST\_PROMPTS} fixed prompts in the test repository, and
+\textit{GEN\_TOKENS} generated tokens per prompt. Named values in italics are
+defined in Section~\ref{sec:symbolic-parameters}.
 
-\wss{Tests related to usability could include conducting a usability test and
-  survey.  The survey will be in the Appendix.}
+\subsubsection{Usability}
 
-\wss{Static tests, review, inspections, and walkthroughs, will not follow the
-format for the tests given below.}
-
-\wss{If you introduce static tests in your plan, you need to provide details.
-How will they be done?  In cases like code (or document) walkthroughs, who will
-be involved? Be specific.}
-
-\subsubsection{Area of Testing1}
-		
-\paragraph{Title for Test}
+These tests cover NFR.S.1 (understandability), NFR.S.2 (controllability) and
+NFR.S.3 (installability). The first is a session with people who have not used
+\progname{}, which is the only way to check how a new user experiences the
+interface. Its tasks and questions are in Section~\ref{sec:usability-survey}.
 
 \begin{enumerate}
 
-\item{test-id1\\}
+\item{T.NFR.USE.1\\}
+\label{T.NFR.USE.1}
 
-Type: Functional, Dynamic, Manual, Static etc.
-					
-Initial State: 
-					
-Input/Condition: 
-					
-Output/Result: 
-					
-How test will be performed: 
-					
-\item{test-id2\\}
+Type: Dynamic, manual
 
-Type: Functional, Dynamic, Manual, Static etc.
-					
-Initial State: 
-					
-Input: 
-					
-Output: 
-					
-How test will be performed: 
+Initial State: Three devices run \progname{} on one local network. One device
+has a background load that cuts its token throughput to about half, so it is
+the bottleneck. \textit{DEMO\_MODEL} is on the device the participant uses.
+
+Input/Condition: At least \textit{TEST\_USERS} participants who have not used
+\progname{}, such as students from other capstone teams, each complete the two
+tasks in Section~\ref{sec:usability-survey}.
+
+Output/Result: Every participant completes task 1 (create a Lake network) and
+task 2 (name the participating devices, the token throughput and the
+bottleneck) within \textit{UI\_TASK\_TIME} each, and the throttled device is
+highlighted as the bottleneck (FR.S.5.6). The answers to the follow-up
+questions are recorded and each problem raised by more than one participant
+becomes a GitHub issue.
+
+How test will be performed: One team member runs the session and reads the
+tasks aloud without giving hints. A second team member times each task from
+the moment the participant first sees the interface and records whether it was
+completed. The participant then answers the questions in
+Section~\ref{sec:usability-survey}.
+
+\item{T.NFR.USE.2\\}
+\label{T.NFR.USE.2}
+
+Type: Dynamic, manual
+
+Initial State: A clean machine for each operating system with no previous
+\progname{} installation, and the release installer or package for that
+system.
+
+Input/Condition: A team member installs \progname{} following only the
+installation instructions.
+
+Output/Result: On Windows and macOS, installation takes at most
+\textit{INSTALL\_CLICKS} clicks after the installer is downloaded. On Linux it
+takes one package manager command. On every system, \progname{} starts after
+installation without further setup.
+
+How test will be performed: The tester counts every click from opening the
+installer to the first launch of \progname{}, and records the count and any
+manual step needed. The test is repeated for each \glink{rc}{release candidate}.
 
 \end{enumerate}
 
-\subsubsection{Area of Testing2}
+\subsubsection{Performance}
 
-...
+These tests cover NFR.S.4 (model size), NFR.S.5 (scalability) and NFR.S.6
+(intelligence). \hyperref[T.NFR.PERF.2]{T.NFR.PERF.2} measures how throughput changes with load, so
+part of its output is a table and a graph rather than a single pass or fail.
+
+\begin{enumerate}
+
+\item{T.NFR.PERF.1\\}
+\label{T.NFR.PERF.1}
+
+Type: Dynamic, manual
+
+Initial State: A Lake network using devices owned by the team that cannot
+individually hold \textit{CAPACITY\_MODEL}: two Windows laptops with NVIDIA
+GPUs, a MacBook, and a Linux PC with an AMD GPU. Let $M_{\max}$ be the largest
+free GPU-accessible memory of any
+node and $M_{\mathrm{total}}$ the sum over all nodes, each reduced by
+\textit{MEMORY\_MARGIN}. \textit{CAPACITY\_MODEL} is used at the lowest
+precision whose memory need (weights plus the KV cache for
+\textit{CONTEXT\_MAX} tokens) is greater than $M_{\max}$ and at most
+$M_{\mathrm{total}}$.
+
+Input/Condition: First, the model is loaded on the node with the most memory
+alone. Then it is loaded across the whole Lake network and given the test
+prompts.
+
+Output/Result: Loading on one node fails with a partitioning failure
+(FR.S.2.2). Loading across the network succeeds, and the responses meet the
+criteria of the inference correctness tests in Section~\ref{sec:fr-tests}.
+
+How test will be performed: The memory of each node is read from the
+Coordinator's device report, and the precision is chosen from those values and
+recorded with the result. With the devices above, $M_{\max}$ is about 14.4 GB
+(the AMD GPU), so the rule selects 16-bit precision, which needs about 15 GB.
+The test is run once per demonstration with the devices available at the time.
+
+\item{T.NFR.PERF.2\\}
+\label{T.NFR.PERF.2}
+
+Type: Dynamic, automated
+
+Initial State: Lake networks of $k = 1, 2, \ldots$ nodes, up to the number of
+team devices available, running \textit{DEMO\_MODEL}.
+
+Input/Condition: For each $k$, the number of concurrent requests $c$ is
+increased through $1, 2, 4, 8, \ldots$ while each request generates
+\textit{GEN\_TOKENS} tokens.
+
+Output/Result: For each $k$, the largest $c$, called $c_{\max}(k)$, at which
+the mean per-request token throughput is within \textit{MAX\_DEGRADATION} of the
+single-request throughput. The test passes if $c_{\max}(k) \ge$
+\textit{MIN\_CONCURRENT} for every $k \ge 2$ and $c_{\max}(k) \ge k \cdot
+c_{\max}(1)$. The results are also reported as a table and a graph of
+$c_{\max}$ against $k$.
+
+How test will be performed: A load-test script sends the requests through the
+OpenAI-compatible API and records the tokens per second of each request. The
+results are kept for the Performance Report.
+
+\item{T.NFR.PERF.3\\}
+\label{T.NFR.PERF.3}
+
+Type: Dynamic, automated
+
+Initial State: \textit{DEMO\_MODEL} served two ways: by llama.cpp's
+\texttt{llama-server} on one machine, and by a Lake network of \textit{MIN\_NODES} nodes.
+
+Input/Condition: The same \textit{BENCH\_QUESTIONS} multiple-choice questions
+from the MMLU (Massive Multitask Language Understanding) benchmark
+\citep{MMLU}, a standard test of a language model's knowledge and
+reasoning with four-option questions across 57 subjects, such as mathematics,
+law and medicine. The questions are sent to both through the OpenAI-compatible API with
+\glink{greedy}{greedy decoding}.
+
+Output/Result: The Lake network's accuracy is at least \textit{BENCH\_RATIO} of
+the single-machine accuracy. The relative error
+$\frac{|a_{\mathrm{single}} - a_{\mathrm{Lake}}|}{a_{\mathrm{single}}}$ is reported, where
+$a$ is the fraction of questions answered correctly.
+
+How test will be performed: A script sends each question, extracts the answer
+letter from the response, and scores both runs against the answer key. Using
+\texttt{llama-server} as the baseline means both runs use the same API and
+prompts, so only the split differs.
+
+\end{enumerate}
+
+\subsubsection{Look and Feel}
+
+NFR.S.7 (consistency) is checked by inspection, since it concerns how the Lake
+Client's source is written rather than how it behaves.
+
+\begin{enumerate}
+
+\item{T.NFR.LF.1\\}
+\label{T.NFR.LF.1}
+
+Type: Static, inspection
+
+Initial State: The Lake Client source at a \glink{rc}{release candidate}.
+
+Input/Condition: Two team members who did not write the Lake Client code under
+review go through this checklist:
+\begin{enumerate}
+  \item A search of the source for colour values (hexadecimal, \texttt{rgb()}
+    and \texttt{hsl()}) and font names finds them only in the theme file.
+  \item Every component takes its colours and fonts from the theme.
+  \item Every screen of the Lake Client, viewed once, shows no colour or font
+    outside the theme.
+\end{enumerate}
+
+Output/Result: All three items pass. Any failure is filed as a GitHub issue.
+
+How test will be performed: The reviewers record the result of each item and
+the commit reviewed in the pull request for the release candidate.
+
+\end{enumerate}
+
+\subsubsection{Fault Tolerance}
+
+These tests cover NFR.S.8 (rejecting invalid model files) and NFR.S.9 (correct
+results despite packet loss and corruption).
+
+\begin{enumerate}
+
+\item{T.NFR.FT.1\\}
+\label{T.NFR.FT.1}
+
+Type: Dynamic, automated
+
+Initial State: A Lake network of \textit{MIN\_NODES} nodes on one machine, with no model loaded.
+
+Input/Condition: Four invalid model files, each given to the Lake Client as the
+model to load:
+\begin{enumerate}
+  \item \textit{SMALL\_MODEL} truncated to half its size;
+  \item \textit{SMALL\_MODEL} with its first four bytes (the GGUF magic number)
+    overwritten;
+  \item a plain text file renamed with a \texttt{.gguf} extension;
+  \item a valid GGUF file of a model architecture \progname{} does not support.
+\end{enumerate}
+
+Output/Result: Each file is rejected with an error message that names the
+problem, no partition is sent to any node, and no process crashes.
+
+How test will be performed: A test script loads each file in turn and checks
+the error returned, the nodes' logs, and that every process is still running.
+
+\item{T.NFR.FT.2\\}
+\label{T.NFR.FT.2}
+
+Type: Dynamic, automated
+
+Initial State: A Lake network of \textit{MIN\_NODES} nodes on one Linux machine running
+\textit{SMALL\_MODEL}, with the nodes connected through the loopback interface.
+
+Input/Condition: The test prompts run once with no network impairment and
+then again for each packet loss and corruption rate in \textit{LOSS\_LEVELS}.
+
+Output/Result: The generated tokens under every impairment are identical to the
+tokens with no impairment.
+
+How test will be performed: The Linux \texttt{tc netem} tool adds the loss or
+corruption to the loopback interface. The test runs in continuous integration
+on a Linux runner.
+
+\end{enumerate}
+
+\subsubsection{Privacy}
+
+These tests cover NFR.S.10 (no stored request data), NFR.S.11 (no data sent
+outside the Lake network), NFR.S.12 (no untrusted devices) and NFR.E.5 (no
+requests to third-party services).
+
+\begin{enumerate}
+
+\item{T.NFR.PRIV.1\\}
+\label{T.NFR.PRIV.1}
+
+Type: Dynamic, automated
+
+Initial State: A Lake network of \textit{MIN\_NODES} nodes with \textit{SMALL\_MODEL} loaded and
+logging at its most detailed level.
+
+Input/Condition: The test prompts, each with a unique random marker string
+added, sent through the API until every request completes. The prompts are
+also sent during the faults of \hyperref[T.SR.3]{T.SR.3} and
+\hyperref[T.SR.4]{T.SR.4}, since error handling is where request
+data is most likely to reach a log.
+
+Output/Result: A search of every file \progname{} wrote on every node, including
+its data directory, diagnostic logs and temporary files, finds none of the
+marker strings, none of the response text, and no tensor or KV cache contents
+(SR5-2).
+
+How test will be performed: A script records the files \progname{} creates or
+changes during the run and searches them for each marker and response. Tensor
+contents are found by searching for the byte patterns of tensors sent during
+the run.
+
+\item{T.NFR.PRIV.2\\}
+\label{T.NFR.PRIV.2}
+
+Type: Dynamic, manual
+
+Initial State: A Lake network of \textit{MIN\_NODES} nodes on a local network, with packet capture
+running on every node.
+
+Input/Condition: Leave an open session for \textit{IDLE\_TIME} with no
+requests, then run the test prompts, and shut down the Lake network.
+
+Output/Result: Every captured packet sent by \progname{} goes to another node of
+the Lake network, to a device on the local network being discovered or invited,
+or to the client that sent the request. There are no other destinations,
+including no name lookups for outside hosts.
+
+How test will be performed: A team member captures traffic with
+\texttt{tcpdump} on Linux and macOS or Wireshark on Windows, filters it to the
+\progname{} processes, and lists every destination address and port.
+
+\item{T.NFR.PRIV.3\\}
+\label{T.NFR.PRIV.3}
+
+Type: Dynamic, manual
+
+Initial State: The Lake network formation setup from
+Section~\ref{sec:fr-tests}: one leader and three other devices running
+\progname{} on one local network, with packet capture running on each.
+
+Input/Condition: The three devices cover each case of the two approvals in
+SR5-1, where the leader approves a device by selecting it (FR.S.5.2). The
+leader selects two of the devices and invites them: one accepts the invitation
+and one declines it. The third device is not selected, so it is never invited.
+The leader then loads \textit{SMALL\_MODEL} and runs the test prompts.
+
+Output/Result: Only the leader and the device that both the leader and the
+device approved take part in the Lake network. The other two devices receive
+no model partition, hidden state or request data, and each of them appears in
+the capture only in discovery and invitation traffic.
+
+How test will be performed: A team member filters the capture on each of the
+two excluded devices to the \progname{} processes and checks every packet
+received against this rule.
+
+\end{enumerate}
+
+\subsubsection{Compatibility}
+
+These tests cover NFR.S.13 (operating systems), NFR.S.14 (CPU architectures),
+NFR.S.15 (GPUs) and NFR.E.1 (supported platforms). Operating systems and CPU
+architectures are covered by continuous integration. Continuous integration
+runners have no usable GPUs, so each GPU vendor is covered on team-owned
+devices, as shown in Table~\ref{tab:gpu-coverage}.
+
+\begin{table}[h]
+\centering
+\caption{GPU coverage for T.NFR.COMP.2}
+\label{tab:gpu-coverage}
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+\textbf{Vendor} & \textbf{Verification} \\
+\midrule
+NVIDIA & Run with the CUDA backend on Gary's laptop (GeForce RTX 3050 Laptop
+  GPU, 4 GB) and Colin's Windows laptop (8 GB). \\
+Apple & Run with the Metal backend on Jinwoo's MacBook (64 GB unified memory),
+  Ethan's MacBook (32 GB) and Colin's MacBook (16 GB). \\
+AMD & Run on Matthew's AMD GPU (16 GB) with the ROCm backend, or the Vulkan
+  backend if ROCm does not support the card or its operating system. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{enumerate}
+
+\item{T.NFR.COMP.1\\}
+\label{T.NFR.COMP.1}
+
+Type: Dynamic, automated
+
+Initial State: The continuous integration workflow, with runners for Windows,
+macOS and Linux on both x86\_64 and ARM where GitHub provides them.
+
+Input/Condition: Every pull request to the main branch.
+
+Output/Result: \progname{} builds, and its unit and integration tests pass with
+the CPU backend, on every runner.
+
+How test will be performed: A GitHub Actions matrix job runs the build and the
+tests on each runner. The branch rules block merging if any runner fails.
+
+\item{T.NFR.COMP.2\\}
+\label{T.NFR.COMP.2}
+
+Type: Dynamic, manual
+
+Initial State: The devices in Table~\ref{tab:gpu-coverage}, each running
+\progname{} with its GPU backend.
+
+Input/Condition: The inference correctness test from
+Section~\ref{sec:fr-tests} with \textit{DEMO\_MODEL}, split across two
+processes on the device.
+
+Output/Result: On each device, the split model produces the same tokens as the
+unsplit model on the same device.
+
+How test will be performed: The device owner runs the test before each
+demonstration and records the device, backend and result.
+
+\end{enumerate}
+
+\subsubsection{Environment and Licensing}
+
+These tests cover NFR.E.4 (model weights unchanged), NFR.E.6 (formatting and
+linting), NFR.E.7 (GPL compliance) and NFR.E.8 (model licences).
+
+\begin{enumerate}
+
+\item{T.NFR.ENV.1\\}
+\label{T.NFR.ENV.1}
+
+Type: Dynamic, automated
+
+Initial State: \textit{SMALL\_MODEL} on disk, with its SHA-256 checksum
+recorded.
+
+Input/Condition: A Lake network loads the model, partitions it across \textit{MIN\_NODES} nodes
+and runs the test prompts.
+
+Output/Result: The model file's SHA-256 checksum is unchanged.
+
+How test will be performed: Part of the integration tests run in continuous
+integration.
+
+\item{T.NFR.ENV.2\\}
+\label{T.NFR.ENV.2}
+
+Type: Static, automated
+
+Initial State: The continuous integration workflow.
+
+Input/Condition: Every pull request to the main branch.
+
+Output/Result: Ruff \citep{Ruff} and Black \citep{Black} pass for Python,
+rustfmt \citep{Rustfmt} and Clippy \citep{Clippy} for Rust, and ESLint
+\citep{ESLint} and Prettier \citep{Prettier} for TypeScript, with no errors.
+
+How test will be performed: The linting stage of continuous integration runs
+each tool. The branch rules block merging if it fails.
+
+\item{T.NFR.ENV.3\\}
+\label{T.NFR.ENV.3}
+
+Type: Static, automated
+
+Initial State: The project's dependency lists for Rust, Python and TypeScript.
+
+Input/Condition: Every pull request that changes a dependency.
+
+Output/Result: Every dependency's licence is on the project's list of
+licences compatible with \glink{gpl}{GPL} v3.0 \citep{GPLv3}.
+
+How test will be performed: \texttt{cargo-deny} \citep{CargoDeny},
+\texttt{pip-licenses} \citep{PipLicenses} and \texttt{license-checker}
+\citep{LicenseChecker} run in continuous integration and fail the build for
+any licence not on the list.
+
+\item{T.NFR.ENV.4\\}
+\label{T.NFR.ENV.4}
+
+Type: Static, inspection
+
+Initial State: The list of models used in testing and demonstrations
+(Table~\ref{tab:test-models}).
+
+Input/Condition: Two team members read the licence of each model.
+
+Output/Result: Each model's licence permits the way \progname{} uses it, and the
+licence name and link are recorded in the test repository.
+
+How test will be performed: The review is repeated whenever a model is added
+to the list.
+
+\end{enumerate}
+
+\subsection{Tests for Safety Requirements}
+\label{sec:sr-tests}
+
+This section gives the system tests for the safety requirements from the
+Hazard Analysis (SR0-1 to SR5-2). SR5-1 (two-sided authorisation) and SR5-2 (no request data in diagnostic logs)
+are the same properties as NFR.S.12 and NFR.S.10, so they are covered by
+\hyperref[T.NFR.PRIV.3]{T.NFR.PRIV.3} and
+\hyperref[T.NFR.PRIV.1]{T.NFR.PRIV.1}. Several tests need faults that cannot be
+caused from outside \progname{}, such as a corrupted tensor that reaches
+Tensor I/O, since TCP, which gRPC runs on, discards most data corrupted on the
+network. For these, test builds of \progname{} include a
+fault-injection option in Tensor I/O and the Coordinator. It is not compiled
+into release builds.
+
+\begin{enumerate}
+
+\item{T.SR.1\\}
+\label{T.SR.1}
+
+Type: Dynamic, automated
+
+Initial State: The Model Partitioner, given device reports for test Lake
+networks of one to four nodes with different amounts of free memory.
+
+Input/Condition: \textit{SMALL\_MODEL} and \textit{DEMO\_MODEL}, each
+partitioned for every test network, together with three invalid cases: a model
+larger than the whole network's memory after \textit{MEMORY\_MARGIN} is
+removed from each node, a manual allocation that puts more layers on one node
+than its memory allows, and a network of one node.
+
+Output/Result: Every partitioning produced uses at least \textit{MIN\_NODES}
+nodes, assigns every layer of the model to exactly one node, and gives every
+selected node at least one layer. Each invalid case is rejected with a
+partitioning failure (FR.S.2.2) and nothing is sent to any node.
+
+How test will be performed: Part of the integration tests run in continuous
+integration. The test checks each partitioning against the rules above and the
+memory reported for each node.
+
+\item{T.SR.2\\}
+\label{T.SR.2}
+
+Type: Dynamic, automated
+
+Initial State: A three-node Lake network on one machine running
+\textit{SMALL\_MODEL}.
+
+Input/Condition: The test prompts are sent while each of the following happens
+in turn:
+\begin{enumerate}
+  \item one follower's health reports are held back for longer than
+    \textit{HEALTH\_TTL};
+  \item one follower is made to fail its health check, then made to pass it
+    again;
+  \item a fourth node joins and its partition is not yet confirmed.
+\end{enumerate}
+Leader failure, the other case of SR4-2, is tested by
+\hyperref[T.FR.CRD.5]{T.FR.CRD.5}.
+
+Output/Result: In cases (a) and (b) the follower is marked unavailable and is not
+given new requests or partitions until it passes a health check. In case (c) no
+request is sent to the new node before its partition is confirmed.
+
+How test will be performed: Part of the integration tests run in continuous
+integration. The fault-injection option holds back health reports and fails health
+checks. The Coordinator's routing log records which node each request is sent
+to.
+
+\item{T.SR.3\\}
+\label{T.SR.3}
+
+Type: Dynamic, automated
+
+Initial State: A Lake network of \textit{MIN\_NODES} nodes on one machine running
+\textit{SMALL\_MODEL}.
+
+Input/Condition: During a request, the follower process is paused. In one run
+it is resumed before \textit{RECOVERY\_LIMIT} attempts are used. In a second
+run it stays paused.
+
+Output/Result: In both runs the Coordinator treats the connection as failed
+after \textit{NODE\_TIMEOUT} without a response. In the first run the request
+is retried and completes with the same tokens as a run with no fault. In the
+second run the request is retried at most \textit{RECOVERY\_LIMIT} times and
+the API then returns an error for that request instead of waiting forever.
+
+How test will be performed: Part of the integration tests run in continuous
+integration. The script pauses and resumes the follower with operating system
+signals and records the time of each retry from the Coordinator's log.
+
+\item{T.SR.4\\}
+\label{T.SR.4}
+
+Type: Dynamic, automated
+
+Initial State: A Lake network of \textit{MIN\_NODES} nodes on one machine running
+\textit{SMALL\_MODEL}.
+
+Input/Condition: The fault-injection option changes bytes in one tensor
+message and cuts another tensor message short, during different requests.
+
+Output/Result: Each damaged tensor is detected and discarded, a failure is
+reported to the Coordinator, and the request is retried and completes with the
+same tokens as a run with no fault. The log entry for each failure holds the
+tensor's metadata, such as its size and the request and layer it belongs to,
+and none of its contents.
+
+How test will be performed: Part of the integration tests run in continuous
+integration. \hyperref[T.NFR.FT.2]{T.NFR.FT.2} cannot cover this, because TCP,
+which gRPC runs on, discards most packets that \texttt{tc netem} corrupts
+before \progname{} reads them.
+
+\item{T.SR.5\\}
+\label{T.SR.5}
+
+Type: Dynamic, automated
+
+Initial State: A Lake network of \textit{MIN\_NODES} nodes on one Linux machine running
+\textit{SMALL\_MODEL}, with the nodes connected through the loopback interface
+and a baseline latency recorded for the connection.
+
+Input/Condition: The test prompts, run with \texttt{tc netem} adding a delay of
+half of \textit{LATENCY\_TOL} above the baseline, then twice
+\textit{LATENCY\_TOL} above it.
+
+Output/Result: The Coordinator is notified of high latency during the second
+run and not during the first.
+
+How test will be performed: Part of the integration tests run in continuous
+integration on a Linux runner. The test checks the Coordinator's log for the latency
+notice.
+
+\end{enumerate}
+\endgroup
 
 \subsection{Traceability Between Test Cases and Requirements}
 
-\wss{Provide a table that shows which test cases are supporting which
-  requirements.}
+Table~\ref{tab:trace-fr} lists the functional requirements that each system test in
+Section~\ref{sec:fr-tests} verifies. Every functional requirement is supported by at least one
+system test, with the exceptions listed at the start of Section~\ref{sec:fr-tests}.
+
+\begin{table}[htbp]
+\centering
+\caption{Traceability of system tests to functional requirements}
+\label{tab:trace-fr}
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+\textbf{Test Case ID} & \textbf{Requirements Verified} \\
+\midrule
+\hyperref[T.FR.CRD.1]{T.FR.CRD.1} & \textit{FR.S.1.4}, \textit{FR.S.1.5}, \textit{FR.S.1.15},
+		\textit{FR.S.1.17}, \textit{FR.S.1.18}, \textit{FR.S.1.20}, \textit{FR.S.1.21},
+		\textit{FR.S.5.1}, \textit{FR.S.5.2}, \textit{FR.S.5.7}, \textit{FR.S.1.16}, \textit{FR.S.4.1} \\
+\hyperref[T.FR.CRD.2]{T.FR.CRD.2} & \textit{FR.S.1.1}, \textit{FR.S.1.6}, \textit{FR.S.1.8},
+		\textit{FR.S.1.19}, \textit{FR.S.3.1} \\
+\hyperref[T.FR.CRD.3]{T.FR.CRD.3} & \textit{FR.S.1.7}, \textit{FR.S.1.10}, \textit{FR.S.1.11},
+		\textit{FR.S.1.13}, \textit{FR.S.1.22}, \textit{FR.S.1.23}, \textit{FR.S.1.2},
+		\textit{FR.S.1.3}, \textit{FR.S.3.4}, \textit{FR.S.4.5} \\
+\hyperref[T.FR.CRD.4]{T.FR.CRD.4} & \textit{FR.S.1.12}, \textit{FR.S.1.13} \\
+\hyperref[T.FR.CRD.5]{T.FR.CRD.5} & \textit{FR.S.1.24}, \textit{FR.S.1.25}, \textit{SR4-2} \\
+\hyperref[T.FR.MP.1]{T.FR.MP.1} & \textit{FR.S.2.1}, \textit{FR.S.2.4}, \textit{FR.S.1.8} \\
+\hyperref[T.FR.MP.2]{T.FR.MP.2} & \textit{FR.S.2.2} \\
+\hyperref[T.FR.IE.1]{T.FR.IE.1} & \textit{FR.S.3.2}, \textit{FR.S.3.3}, \textit{FR.S.4.3}, \textit{FR.S.4.4},
+		\textit{FR.S.1.9} \\
+\hyperref[T.FR.IE.2]{T.FR.IE.2} & \textit{FR.S.3.5}, \textit{FR.S.4.6}, \textit{FR.S.1.14} \\
+\hyperref[T.FR.TIO.1]{T.FR.TIO.1} & \textit{FR.S.4.2} \\
+\hyperref[T.FR.LCLI.1]{T.FR.LCLI.1} & \textit{FR.S.5.1}, \textit{FR.S.5.2}, \textit{FR.S.5.3}, \textit{FR.S.5.7} \\
+\hyperref[T.FR.LCLI.2]{T.FR.LCLI.2} & \textit{FR.S.5.5}, \textit{FR.S.5.6} \\
+\hyperref[T.FR.LCLI.3]{T.FR.LCLI.3} & \textit{FR.S.5.4} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Table~\ref{tab:trace-nfr} lists the nonfunctional and safety requirements
+that each system test in Sections~\ref{sec:nfr-tests} and~\ref{sec:sr-tests}
+verifies. Every nonfunctional and safety
+requirement appears at least once. NFR.E.2 and NFR.E.3 are also verified by
+the partitioning and FR.S.1.9 tests in Section~\ref{sec:fr-tests}. Some of
+these tests also check a functional requirement, such as FR.S.5.6 in
+\hyperref[T.NFR.USE.1]{T.NFR.USE.1} and FR.S.2.2 in
+\hyperref[T.NFR.PERF.1]{T.NFR.PERF.1}.
+
+\begin{table}[htbp]
+\centering
+\caption{Traceability of nonfunctional and safety tests to requirements}
+\label{tab:trace-nfr}
+\begin{tabularx}{\textwidth}{l>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Test case} & \textbf{Nonfunctional requirements} & \textbf{Safety requirements} \\
+\midrule
+\hyperref[T.NFR.USE.1]{T.NFR.USE.1} & NFR.S.1, NFR.S.2 & \\
+\hyperref[T.NFR.USE.2]{T.NFR.USE.2} & NFR.S.3, NFR.S.13, NFR.E.1 & \\
+\hyperref[T.NFR.PERF.1]{T.NFR.PERF.1} & NFR.S.4, NFR.E.2 & SR1-3 \\
+\hyperref[T.NFR.PERF.2]{T.NFR.PERF.2} & NFR.S.5, NFR.E.3 & \\
+\hyperref[T.NFR.PERF.3]{T.NFR.PERF.3} & NFR.S.6, NFR.E.3 & \\
+\hyperref[T.NFR.LF.1]{T.NFR.LF.1} & NFR.S.7 & \\
+\hyperref[T.NFR.FT.1]{T.NFR.FT.1} & NFR.S.8 & \\
+\hyperref[T.NFR.FT.2]{T.NFR.FT.2} & NFR.S.9 & SR3-1 \\
+\hyperref[T.NFR.PRIV.1]{T.NFR.PRIV.1} & NFR.S.10 & SR5-2 \\
+\hyperref[T.NFR.PRIV.2]{T.NFR.PRIV.2} & NFR.S.11, NFR.E.5 & \\
+\hyperref[T.NFR.PRIV.3]{T.NFR.PRIV.3} & NFR.S.12 & SR5-1 \\
+\hyperref[T.NFR.COMP.1]{T.NFR.COMP.1} & NFR.S.13, NFR.S.14, NFR.E.1 & \\
+\hyperref[T.NFR.COMP.2]{T.NFR.COMP.2} & NFR.S.15 & \\
+\hyperref[T.NFR.ENV.1]{T.NFR.ENV.1} & NFR.E.4 & \\
+\hyperref[T.NFR.ENV.2]{T.NFR.ENV.2} & NFR.E.6 & \\
+\hyperref[T.NFR.ENV.3]{T.NFR.ENV.3} & NFR.E.7 & \\
+\hyperref[T.NFR.ENV.4]{T.NFR.ENV.4} & NFR.E.8 & \\
+\hyperref[T.SR.1]{T.SR.1} & NFR.E.2 & SR1-1, SR1-2, SR1-3 \\
+\hyperref[T.SR.2]{T.SR.2} & & SR0-1, SR0-2, SR4-2 \\
+\hyperref[T.SR.3]{T.SR.3} & & SR2-1, SR4-1 \\
+\hyperref[T.SR.4]{T.SR.4} & & SR3-1, SR3-2, SR5-2 \\
+\hyperref[T.SR.5]{T.SR.5} & & SR4-3 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+\FloatBarrier
 
 \section{Unit Test Description}
 
-\wss{This section should not be filled in until after the MIS (detailed design
-  document) has been completed.}
-
-\wss{Reference your MIS (detailed design document) and explain your overall
-philosophy for test case selection.}  
-
-\wss{To save space and time, it may be an option to provide less detail in this section.  
-For the unit tests you can potentially layout your testing strategy here.  That is, you 
-can explain how tests will be selected for each module.  For instance, your test building 
-approach could be test cases for each access program, including one test for normal behaviour 
-and as many tests as needed for edge cases.  Rather than create the details of the input 
-and output here, you could point to the unit testing code.  For this to work, you code 
-needs to be well-documented, with meaningful names for all of the tests.}
-
-\subsection{Unit Testing Scope}
-
-\wss{What modules are outside of the scope.  If there are modules that are
-  developed by someone else, then you would say here if you aren't planning on
-  verifying them.  There may also be modules that are part of your software, but
-  have a lower priority for verification than others.  If this is the case,
-  explain your rationale for the ranking of module importance.}
-
-\subsection{Tests for Functional Requirements}
-
-\wss{Most of the verification will be through automated unit testing.  If
-  appropriate specific modules can be verified by a non-testing based
-  technique.  That can also be documented in this section.}
-
-\subsubsection{Module 1}
-
-\wss{Include a blurb here to explain why the subsections below cover the module.
-  References to the MIS would be good.  You will want tests from a black box
-  perspective and from a white box perspective.  Explain to the reader how the
-  tests were selected.}
-
-\begin{enumerate}
-
-\item{test-id1\\}
-
-Type: \wss{Functional, Dynamic, Manual, Automatic, Static etc. Most will
-  be automatic}
-					
-Initial State: 
-					
-Input: 
-					
-Output: \wss{The expected result for the given inputs}
-
-Test Case Derivation: \wss{Justify the expected value given in the Output field}
-
-How test will be performed: 
-					
-\item{test-id2\\}
-
-Type: \wss{Functional, Dynamic, Manual, Automatic, Static etc. Most will
-  be automatic}
-					
-Initial State: 
-					
-Input: 
-					
-Output: \wss{The expected result for the given inputs}
-
-Test Case Derivation: \wss{Justify the expected value given in the Output field}
-
-How test will be performed: 
-
-\item{...\\}
-    
-\end{enumerate}
-
-\subsubsection{Module 2}
-
-...
-
-\subsection{Tests for Nonfunctional Requirements}
-
-\wss{If there is a module that needs to be independently assessed for
-  performance, those test cases can go here.  In some projects, planning for
-  nonfunctional tests of units will not be that relevant.}
-
-\wss{These tests may involve collecting performance data from previously
-  mentioned functional tests.}
-
-\subsubsection{Module ?}
-		
-\begin{enumerate}
-
-\item{test-id1\\}
-
-Type: \wss{Functional, Dynamic, Manual, Automatic, Static etc. Most will
-  be automatic}
-					
-Initial State: 
-					
-Input/Condition: 
-					
-Output/Result: 
-					
-How test will be performed: 
-					
-\item{test-id2\\}
-
-Type: Functional, Dynamic, Manual, Static etc.
-					
-Initial State: 
-					
-Input: 
-					
-Output: 
-					
-How test will be performed: 
-
-\end{enumerate}
-
-\subsubsection{Module ?}
-
-...
-
-\subsection{Traceability Between Test Cases and Modules}
-
-\wss{Provide evidence that all modules have been considered.}
+This section will be completed after the Module Interface Specification
+\citep{MIS}, since unit tests are written against each module's interface. The
+areas we already plan to unit test are listed in Section~\ref{sec:ImpVer}.
 				
 \bibliographystyle{plainnat}
 
@@ -547,76 +1172,257 @@ How test will be performed:
 
 \section{Appendix}
 
-This is where you can place additional information.
+This appendix gives the symbolic parameters used by the system tests and the
+questions for the usability session.
 
 \subsection{Symbolic Parameters}
+\label{sec:symbolic-parameters}
 
 The definition of the test cases will call for SYMBOLIC\_CONSTANTS.
 Their values are defined in this section for easy maintenance.
 
-\subsection{Usability Survey Questions?}
+The test models are listed in Table~\ref{tab:test-models}. All three use the
+Llama architecture, so the same code path is tested from the smallest model to
+the largest, and all three are released under the Apache 2.0 licence. Values
+taken from the SRS Symbolic Constants appendix keep the value given there and
+are listed in Table~\ref{tab:vnv-constants}. Values only used in testing are
+listed in Table~\ref{tab:vnv-test-constants}.
 
-\wss{This is a section that would be appropriate for some projects.}
+\begin{table}[h]
+\centering
+\caption{Test models}
+\label{tab:test-models}
+\begin{tabularx}{\textwidth}{lXl}
+\toprule
+\textbf{Name} & \textbf{Model and use} & \textbf{Size} \\
+\midrule
+\textit{SMALL\_MODEL} & SmolLM2-135M-Instruct, Q8\_0. Continuous integration
+  and tests where answer quality does not matter. & about 150 MB \\
+\textit{DEMO\_MODEL} & SmolLM2-1.7B-Instruct, Q8\_0. Quality comparisons,
+  compatibility runs and the usability session. & about 1.8 GB \\
+\textit{CAPACITY\_MODEL} & Mistral-7B-Instruct-v0.3, at the precision chosen
+  in test \hyperref[T.NFR.PERF.1]{T.NFR.PERF.1}. & 7.7 to 14.5 GB \\
+\bottomrule
+\end{tabularx}
+\end{table}
 
-\newpage{}
+\begin{table}[h]
+\centering
+\small
+\caption{Symbolic parameters from the SRS}
+\label{tab:vnv-constants}
+\begin{tabularx}{\textwidth}{ll>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Name} & \textbf{Value} & \textbf{Description} \\
+\midrule
+\textit{UI\_TASK\_TIME} & 2 min & Time a new user may take for each usability
+  task. \\
+\textit{INSTALL\_CLICKS} & 10 & Maximum clicks to install on Windows or macOS. \\
+\textit{TEST\_USERS} & 3 & Minimum number of usability session participants. \\
+\textit{MAX\_DEGRADATION} & 20\% & Maximum loss of per-request throughput under
+  concurrent load. \\
+\textit{MIN\_CONCURRENT} & 2 & Minimum number of requests served at the same
+  time. \\
+\textit{BENCH\_RATIO} & 95\% & Minimum benchmark accuracy of the split model,
+  relative to one machine. \\
+\textit{MAX\_LOSS} & 10\% & Highest packet loss and corruption rate tested. \\
+\textit{CONTEXT\_MAX} & 4096 tokens & Context length each node reserves KV cache
+  for. \\
+\textit{MEMORY\_MARGIN} & 10\% & Share of each node's memory left free for
+  runtime overhead. \\
+\textit{MIN\_NODES} & 2 & Minimum nodes a model is partitioned across; also the
+  default size of a test Lake network. \\
+\textit{FAIL\_THRESHOLD} & 50\% & Share of usual throughput below which a node is failing. \\
+\textit{HEALTH\_TTL} & 15 s & Age after which health data is stale. \\
+\textit{NODE\_TIMEOUT} & 10 s & Time without a response before a connection is failed. \\
+\textit{RECOVERY\_LIMIT} & 3 & Maximum recovery attempts for one request. \\
+\textit{LEADER\_TIMEOUT} & 30 s & Time without a health query before followers assume the leader failed. \\
+\textit{LATENCY\_TOL} & 50\% & Increase over baseline latency that is reported
+  to the Coordinator. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[h]
+\centering
+\small
+\caption{Symbolic parameters used only in testing}
+\label{tab:vnv-test-constants}
+\begin{tabularx}{\textwidth}{l>{\raggedright\arraybackslash}p{2.4cm}>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Name} & \textbf{Value} & \textbf{Description} \\
+\midrule
+\textit{TEST\_PROMPTS} & 20 & Number of fixed prompts used by default. \\
+\textit{GEN\_TOKENS} & 128 & Tokens generated per prompt. \\
+\textit{BENCH\_QUESTIONS} & 500 & MMLU questions in \hyperref[T.NFR.PERF.3]{T.NFR.PERF.3}. \\
+\textit{LOSS\_LEVELS} & 1\%, 5\%, \textit{MAX\_LOSS} & Packet loss and
+  corruption rates in \hyperref[T.NFR.FT.2]{T.NFR.FT.2}. \\
+\textit{IDLE\_TIME} & 10 min & Idle period captured in \hyperref[T.NFR.PRIV.2]{T.NFR.PRIV.2}. \\
+\textit{THROUGHPUT\_REDUCTION} & 50\% & Network connection throughput reduction in \hyperref[T.FR.TIO.1]{T.FR.TIO.1}.\\
+\bottomrule
+\end{tabularx}
+\end{table}
+\FloatBarrier
+
+\subsection{Usability Survey Questions}
+\label{sec:usability-survey}
+
+This survey is used in test \hyperref[T.NFR.USE.1]{T.NFR.USE.1}. It checks NFR.S.1 and NFR.S.2, and
+the bottleneck highlighting in FR.S.5.6. Each participant has a time limit of
+\textit{UI\_TASK\_TIME} for each task. A team member records the time taken
+and whether the task was completed, and gives no hints during the tasks.
+
+\paragraph{Tasks}
+\begin{enumerate}
+  \item Create a Lake network using the devices listed on the card and the
+    model provided. (NFR.S.2)
+  \item Using the interface, name the devices taking part, the current token
+    throughput, and the slowest device or connection. (NFR.S.1, FR.S.5.6)
+\end{enumerate}
+
+\paragraph{Questions after the tasks}
+\begin{enumerate}
+  \item Was anything confusing while creating the network?
+  \item How did you find the slowest device or connection? Was anything hard
+    to find?
+  \item Did you expect to see or do anything that was not there?
+\end{enumerate}
+
+\clearpage
 
 \section{Appendix --- Generative AI Use Disclosure}
 
-\wss{ChatGPT (version 5) was used to brainstorm ideas for the template for this disclose section.}
-
 \subsection{AI Tools Used}
 
-\wss{Give the name of the AI tool(s) used and the version.}
+\begin{itemize}
+    \item Anthropic Claude Opus 5.5, used through Claude Code.
+    \item OpenAI ChatGPT.
+\end{itemize}
 
 \subsection{How and Where Used}
 
-\wss{Explain what the tool(s) were used for.  Examples include: brainstorming,
-explaining a technical concept, reviewing the document, generating or modifying
-text, generating or modifying diagrams, identifying errors or omissions or
-inconsistencies.}
-
-\wss{For each of the uses, identify which parts of the document were affected.}
-
-\wss{You do not need to report every interaction, but you should disclose the 
-uses that materially contributed to your work}
+\begin{itemize}
+    \item \textbf{4.2 Tests for Nonfunctional Requirements and 4.3 Tests for
+    Safety Requirements}: Claude drafted the tests from the SRS and Hazard
+    Analysis requirements and the test approach, test IDs and hardware we
+    chose. We reviewed and edited the draft. Claude also drafted the
+    nonfunctional and safety rows of the traceability table in 4.4, the
+    symbolic parameters tables in 6.1 and the usability survey in 6.2.
+    \item \textbf{2 General Information}: Claude drafted the section from the
+    SRS, Hazard Analysis and Problem Statement, along with the bibliography
+    entries for our documents. We reviewed and edited the draft. Claude also
+    drafted the introduction, the Unit Test Description note and the
+    revision history in a final pass.
+    \item \textbf{3.5 Implementation Verification to 3.7 Software
+    Validation}: ChatGPT was used to brainstorm and research ideas and tools
+    alongside course material. It was also used to add placeholder \LaTeX{}
+    code and for a final grammar check, in these sections and in the appendix.
+\end{itemize}
 
 \subsection{Verification of AI-Generated Content}
 
-\wss{\begin{itemize}
-    \item Describe how the team checked AI-generated or AI-assisted material
-    before including it in the document.
-    \item In particular, verify factual claims, technical assertions,
-    requirements, calculations, references, and other information for which an
-    AI system may produce incorrect or fabricated results.
-    \item \textbf{The team is responsible for the accuracy, completeness,
-consistency, and appropriateness of the submitted document, regardless of
-whether material was generated by a human or an AI system.}
-\end{itemize}}
+Every requirement ID and symbolic constant in the drafted sections was checked
+against the SRS, and every requirement in 4.2 was checked to have a test in the
+traceability table.
+
+The requirement IDs, failure mode counts and document references in Section 2
+were also checked against the SRS and Hazard Analysis.
 
 \newpage{}
 
 \section{Appendix --- Reflection}
 
-\wss{This section is not required for CAS 741}
-
-The information in this section will be used to evaluate the team members on the
-graduate attribute of Lifelong Learning.
-
 \input{../Reflection.text}
 
 \begin{enumerate}
-  \item What went well while writing this deliverable? 
+  \item What went well while writing this deliverable?
+
+Our SRS and Hazard Analysis documents that identified several functional, non-functional, and safety requirements gave us a good starting point for defining the test plan. We used these documents to work from a specific requirement to an input to a test, an expected result, and a method to check that result, without having the need to come up with a general list of tests beforehand. For example, the requirements for stale health data and bounded recovery were used to specify tests for ensuring correctness during delayed health reports or a follower node getting interrupted.
+
+We also divided the document by responsibility to improve parallelism and reduce blockers while our team worked. Dividing the document and reviewing things together was important as the verification plan, test cases, traceability tables and symbolic parameters all described related activities, just from different perspectives.
+
+Compared to the SRS and Hazard Analysis documents, we clarified which members owned the sections earlier, as well as thoroughly reviewed and discussed the drafts and pull requests before merging. This helped align the different parts of the V\&V, such as test cases and symbolic parameters before merging them together.
   \item What pain points did you experience during this deliverable, and how
     did you resolve them?
+
+A difficult part of the deliverable was planning the tests for the distributed behavior of Lake (i.e. testing how Lake behaves across computers with different system configurations and hardware capabilities), before the implementation and hardware behaviour were available. We addressed this by separating lightweight automated CI tests from hardware and system tests we would run on our own hardware.
+
   \item What knowledge and skills will the team collectively need to acquire to
   successfully complete the verification and validation of your project?
   Examples of possible knowledge and skills include dynamic testing knowledge,
   static testing knowledge, specific tool usage, Valgrind etc.  You should look to
   identify at least one item for each team member.
+
+  \begin{itemize}
+    \item \textbf{Jinwoo Hong:}
+  Evaluating coverage and memory-checking tools for Rust, especially for areas involving ggml through an unsafe foreign function interface. This is important for testing as it requires figuring out what can and cannot be determined correctness-wise in this area.
+    \item \textbf{Gary Qin:}
+  Designing experiments to determine model capacity, max concurrent requests, and output quality and compare with past baselines, while also configuring various model settings and device configurations.
+    \item \textbf{Matthew Nesbitt:}
+  Building CI workflows across Linux, Windows, and macOS operating systems, while separating automated CI tests from those that require real manual hardware configurations.
+    \item \textbf{Colin Chambachan:}
+  Implementing various fixtures and fault injection tests that can reproduce failures in the distributed system while keeping these tests automated in the CI.
+    \item \textbf{Ethan Walsh:}
+  Ensuring tests are traceable to requirements and being able to audit and inspect missed acceptance criteria, infeasible tests, and any other changes that require tests to be updated.
+  \end{itemize}
+
   \item For each of the knowledge areas and skills identified in the previous
   question, what are at least two approaches to acquiring the knowledge or
   mastering the skill?  Of the identified approaches, which will each team
   member pursue, and why did they make this choice?
+
+  \begin{itemize}
+    \item \textbf{Jinwoo Hong:}
+    \begin{itemize}
+      \item \textbf{Approach 1:}
+      Study the documentation for how to utilize the coverage and memory checking tools for Rust. Read \href{https://doc.rust-lang.org/book/ch20-01-unsafe-rust.html}{Section 20.1 of the Rust Book} to learn about calling C functions and creating safe abstractions around unsafe Rust.
+      \item \textbf{Approach 2:}
+      Compare and learn the tools by working on a small example of both Rust and C communicating.
+      \item \textbf{Chosen approach and reason:}
+      The best approach combines both, focusing on reading documentation and also trying a small implementation to get a better understanding of potential difficulties when implementing with these tools.
+    \end{itemize}
+
+    \item \textbf{Gary Qin:}
+    \begin{itemize}
+      \item \textbf{Approach 1:}
+      Review how existing benchmarks work for evaluating LLMs (e.g., MMLU) and study their methodologies.
+      \item \textbf{Approach 2:}
+      Build a small experiment that varies one factor at a time to easily determine how different changes affect end results.
+      \item \textbf{Chosen approach and reason:}
+      The proposed approach was to run a small experiment supported by documentation and methods used in other benchmarks. This can reveal which configurations cause unstable results before full hardware runs.
+    \end{itemize}
+
+    \item \textbf{Matthew Nesbitt:}
+    \begin{itemize}
+      \item \textbf{Approach 1:}
+      Study the documentation for GitHub Actions and how Rust and Python workflows work across Linux, Windows, and macOS, focusing on areas such as dependency installation, caching, and retaining test reports so that failed runs can be investigated.
+      \item \textbf{Approach 2:}
+      Build a small workflow that compiles a component and runs a test on it on one operating system. Also introduce a failing test to see how the error information can be retrieved.
+      \item \textbf{Chosen approach and reason:}
+      The second approach was chosen because it allows for incrementally understanding and building the CI workflows. Once small components are built, they can be extended to the other operating systems to check platform-specific build and test behaviour.
+    \end{itemize}
+
+    \item \textbf{Colin Chambachan:}
+    \begin{itemize}
+      \item \textbf{Approach 1:}
+      Review various examples of test fixtures, test doubles, and any course content from SFWRENG 3S03 that may be relevant for this area.
+      \item \textbf{Approach 2:}
+      Implement a small test for fault injection, such as withholding a node's health reports until they become stale, and ensuring the system behaves correctly according to the relevant requirements.
+      \item \textbf{Chosen approach and reason:}
+      Approach 1 should be a prerequisite if knowledge on the material is insufficient, otherwise approach 2 was chosen as it allows for more incremental improvements and understanding of the system and tests.
+    \end{itemize}
+
+    \item \textbf{Ethan Walsh:}
+    \begin{itemize}
+      \item \textbf{Approach 1:}
+      Review the course V\&V checklist and the team's traceability table to learn how to identify and interpret missing tests or unclear results.
+      \item \textbf{Approach 2:}
+      Review some requirements and tests with a teammate then compare each other's findings about any missing cases or infeasible test procedures.
+      \item \textbf{Chosen approach and reason:}
+      Assuming familiarity with the course material, the second approach was chosen for helping ensure there are no overlooked results, and that it better applies to Lake's use-case.
+    \end{itemize}
+
+  \end{itemize}
 \end{enumerate}
 
 \end{document}
