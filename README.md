@@ -20,7 +20,7 @@ The folders and files for this project are as follows:
 - runtime: Rust source code for the runtime/engine part of Lake
 - test: End-to-End test cases. (Unit tests can be found with the source)
 
-The documentation for this project is updated on the project's [GitHub page](https://capstonecegjm.github.io/Lake/).
+The documentation for this project is updated on the project's [GitHub page](https://cinqgarcons.github.io/Lake/).
 
 # Install
 If you're a developer, see CONTRIBUTING.md instead for developer install instructions.
