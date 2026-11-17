@@ -159,6 +159,9 @@ memories $m_\ell$ come from SRS S.9. Symbolic constants in italics, such as
 \textit{HEALTH\_INTERVAL}, have the values given in the SRS Symbolic Constants
 appendix. Times are in seconds and memory sizes are in bytes.
 
+Finally, \progname{} uses abstract data types including ChatState. Further definition is provided
+in the modules where they are used. 
+
 \section{Module Decomposition}
 
 The following table is taken directly from the Module Guide document for this project.
@@ -388,34 +391,23 @@ runs Core like every other node.
 
 \newpage
 
-\section{MIS of User Interface Module} \label{UserIntMod}
+\section{MIS of LakeClient} \label{LCMod}
 
 \subsection{Module}
 
-User Interface (M2)
+Lake Client (User Interface)
 
 \subsection{Uses}
 
+\begin{itemize}
+  \item\textbf{NetState} $=\{\mathsf{U}, \mathsf{A}, \mathsf{I}, \mathsf{G},
+    \mathsf{R}, \mathsf{X}\}$, the states of the allocation state machine in SRS
+    S.9.3. Used to represent the state of the overall network.
+  \item\textbf{ChatState}: seq of string, representing all messages the current inference session.
+  \item\textbf{RenderError}: Exception raised when rendering of network or chat fails.
+\end{itemize}
+
 \subsection{Syntax}
-
-\subsubsection{Exported Types}
-
-\begin{itemize}
-  \item $\mathit{NetworkRequest}$: a network management request from the user, one of
-    $\mathsf{invite}(S)$ with $S$: set of $\mathit{DeviceID}$,
-    $\mathsf{load}(\mathit{file})$ with $\mathit{file}$: string, or
-    $\mathsf{unload}$. Each is passed to the Coordinator access program of the
-    same name (inviteDevices, loadModel, unloadModel).
-  \item $\mathit{ChatState}$ = seq of string: the conversation shown to the user.
-    The messages sent so far form the $\mathit{messages}$ field of the
-    Coordinator's $\mathit{Request}$.
-\end{itemize}
-
-\subsubsection{Exported Constants}
-
-\begin{itemize}
-  \item \texttt{REFRESH\_RATE}: $\mathbb{R}$ - frequency of interface updates (Hz)
-\end{itemize}
 
 \subsubsection{Exported Access Programs}
 
@@ -424,11 +416,9 @@ User Interface (M2)
 \toprule
 \textbf{Name} & \textbf{In} & \textbf{Out} & \textbf{Exceptions} \\
 \midrule
-renderNetwork & state: $\mathit{Status}$ & - & RenderingError \\
-displayError & message: $\Sigma^*$ & - & - \\
-requestNetworkChange & request: $\mathit{NetworkRequest}$ & - & - \\
-sendChatMessage & message: $\Sigma^*$ & - & - \\
+renderNetwork & state: $\mathit{NetState}$ & - & RenderingError \\
 renderChat & state: $\mathit{ChatState}$ & - & RenderingError \\
+sendChatMessage & message: string & - & - \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -438,22 +428,15 @@ renderChat & state: $\mathit{ChatState}$ & - & RenderingError \\
 \subsubsection{State Variables}
 
 \begin{itemize}
-  \item uiState: Abstract UI representation
-  \item NetworkState: State of device network, the most recent snapshot of the network and its metrics, a $\mathit{Status}$ from Coordinator.getStatus
-  \item ChatState: Current chat session shown to the user, a $\mathit{ChatState}$
+  \item $\mathit{uiState}$: Abstract UI representation (including both the network and chat portions).
+  \item $\mathit{chatMessages}$- seq of string. All messages included in current inference session.
 \end{itemize}
 
 \subsubsection{Environment Variables}
 
 \begin{itemize}
-  \item window: display managed by the browser and operating system.
+  \item $\mathit{window}$: display managed by the browser and operating system.
 \end{itemize}
-
-\subsubsection{Assumptions}
-
-\subsubsection{Access Routine Semantics}
-
-\subsubsection{Local Functions}
 
 \subsubsection{Exceptions}
 
@@ -466,8 +449,6 @@ renderChat & state: $\mathit{ChatState}$ & - & RenderingError \\
 \newpage{}
 
 \section{Appendix --- Generative AI Use Disclosure}
-
-\wss{ChatGPT (version 5) was used to brainstorm ideas for the template for this disclose section.}
 
 \subsection{AI Tools Used}
 
@@ -487,8 +468,8 @@ renderChat & state: $\mathit{ChatState}$ & - & RenderingError \\
     types and access programs. Claude also drafted the Introduction, the
     Notation section, the Module Decomposition table and the Symbols,
     Abbreviations and Acronyms table.
-    \item \textbf{Expansion of User Interfcae MIS}: Sonnet 5.5 was used to expand 
-    upon initial content in the MIS for the user interface module. Although all 
+    \item \textbf{Expansion of Lake Client MIS}: Sonnet 5.5 was used to expand 
+    upon initial content in the MIS for the Lake Client module. Although all 
     original ideas were provided manually, generative AI was used to improve the 
     quality of the section by providing more detail.
 \end{itemize}
@@ -498,14 +479,12 @@ renderChat & state: $\mathit{ChatState}$ & - & RenderingError \\
 The access programs of the Coordinator and Core were checked against each other
 so that every call the Coordinator makes on Core exists in Core's
 specification, and every type used is defined. The symbolic constants and
-state names were checked against the SRS. The user interface MIS was verified
+state names were checked against the SRS. The Lake Client MIS was verified
 against existing documentation (SRS) and proofread for correctness.
 
 \newpage{}
 
 \section{Appendix --- Reflection}
-
-\wss{Not required for CAS 741 projects}
 
 The information in this section will be used to evaluate the team members on the
 graduate attribute of Problem Analysis and Design.
