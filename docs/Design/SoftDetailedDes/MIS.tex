@@ -191,27 +191,6 @@ The following table is taken directly from the Module Guide document for this pr
 \newpage
 ~\newpage
 
-\section{MIS of User Interface Module} \label{UserIntMod}
-\subsection{Module}
-
-User Interface (M2)
-
-\subsection{Uses}
-
-\begin{itemize}
-  \item \textbf{Coordinator.getNetworkState()}: Returns the latest \texttt{NetworkState} (device list and health/usage statistics).
-  \item \textbf{Coordinator.submitChatMessage(message)}: Routes a user's chat message to the \progname{} network.
-  \item \textbf{Coordinator.submitNetworkRequest(request)}: Passes a user's network management request (scan, add or remove a device, select a model file) to the Coordinator.
-  \item \textbf{NetworkState, NodeMetrics, LinkMetrics, ChatState, ChatMessage, NetworkRequest}: Abstract data types defined in the Notation section.
-  \item \textbf{RenderingError}: Exception raised when rendering fails.
-\end{itemize}
-
-\subsection{Syntax}
-
-\subsubsection{Exported Constants}
-
-\begin{itemize}
-  \item \texttt{REFRESH\_RATE}: $\mathbb{R}$ - frequency of interface updates (Hz)
 \section{MIS of Coordinator} \label{mis:coordinator}
 
 \subsection{Module}
@@ -250,23 +229,6 @@ Coordinator
 \subsubsection{Exported Access Programs}
 
 \begin{center}
-\begin{tabular}{p{3.4cm} p{3.8cm} p{2cm} p{3cm}}
-\hline
-\textbf{Name} & \textbf{In} & \textbf{Out} & \textbf{Exceptions} \\
-\hline
-renderNetwork & state: NetworkState & - & RenderingError \\
-\hline
-displayError & message: $\Sigma^*$ & - & - \\
-\hline
-requestNetworkChange & request: NetworkRequest & - & - \\
-\hline
-sendChatMessage & message: $\Sigma^*$ & - & - \\
-\hline
-renderChat & state: ChatState & - & RenderingError \\
-\hline
-\end{tabular}
-\end{center}
-
 \begin{tabular}{p{3.3cm} p{3.6cm} p{2.9cm} p{3.6cm}}
 \toprule
 \textbf{Name} & \textbf{In} & \textbf{Out} & \textbf{Exceptions} \\
@@ -291,9 +253,6 @@ that an application sends to the OpenAI-compatible API.\par}
 \subsubsection{State Variables}
 
 \begin{itemize}
-  \item uiState: Abstract UI representation
-  \item NetworkState: State of device network, the most recent snapshot of the network and its metrics
-  \item ChatState: Current chat session shown to the user
   \item $\mathit{initialised}: \mathbb{B}$
   \item $\mathit{self}: \mathit{DeviceID}$, the leader node
   \item $\mathit{dev}: \mathit{DeviceID} \to \mathit{DevState}$
@@ -311,64 +270,6 @@ that an application sends to the OpenAI-compatible API.\par}
 \subsubsection{Environment Variables}
 
 \begin{itemize}
-  \item window: display managed by the browser and operating system.
-\end{itemize}
-
-\subsubsection{Assumptions}
-
-\begin{itemize}
-  \item A compatible browser is used: The browser is assumed to support the user interface and the frameworks used to develop it.
-  \item User interactions via keyboard. and mouse are delivered to the application by the browser and operating system of the device.
-  \item The Coordinator on the same device is running and reachable. Communication with the \progname{} network, including the REST API, is handled by the Coordinator, not by this module.
-  \item The state values passed to \texttt{renderNetwork} and \texttt{renderChat} are well-formed instances of their types.
-\end{itemize}
-
-\subsubsection{Access Routine Semantics}
-
-\noindent renderNetwork(state):
-\begin{itemize}
-\item transition: uiState := uiState with message displayed to the user. Window is also refreshed.
-\item output: -
-\item exception: raises RenderingError if the window cannot be updated.
-\end{itemize}
-
-\noindent displayError(message):
-\begin{itemize}
-\item transition: uiState := uiState with error message displayed to the user. The window is then refreshed.
-\item output: -
-\item exception: -
-\end{itemize}
-
-\noindent requestNetworkChange(request):
-\begin{itemize}
-\item transition: Calls Coordinator.submitNetworkRequest(request). The resulting change in the network is shown through a later call to renderNetwork.
-\item output: -
-\item exception: -
-\end{itemize}
-
-\noindent sendChatMessage(message):
-\begin{itemize}
-\item transition: chatState := chatState with the message (user, message, $\top$) appended; calls Coordinator.submitChatMessage(message).
-\item output: -
-\item exception: -
-\end{itemize}
-
-\noindent renderChat(state):
-\begin{itemize}
-\item transition: chatState := state; uiState := the messages of state in order. Any message with isComplete = $\bot$ is shown with a visible indication that it is incomplete. The window is then refreshed.
-\item output: -
-\item exception: raises RenderingError if the window cannot be updated.
-\end{itemize}
-
-
-\subsubsection{Local Functions}
-
-\begin{itemize}
-  \item refreshUI(): Refreshes the window from uiState at REFRESH\_RATE, using the latest value of Coordinator.getNetworkState().
-  \item highlightBottleneck(): NetworkState $\rightarrow$ element identifier. Returns the node or link to highlight, or empty if none.
-  \item formatMetrics(): (NodeMetrics $\cup$ LinkMetrics) $\rightarrow$ $\Sigma^*$. Converts a node's or link's metrics into the text shown to the user.
-\end{itemize}
-
   \item $t: \mathbb{R}$, the current time in seconds.
   \item The local network, through which the Coordinator reaches the Core
     module on every node.
@@ -487,32 +388,48 @@ runs Core like every other node.
 
 \newpage
 
-\section{MIS of \wss{Module Name}} \label{Module} \wss{Use labels for
-  cross-referencing}
-
-\wss{You can reference SRS labels, such as R\ref{R_Inputs}.}
-
-\wss{It is also possible to use \LaTeX for hypperlinks to external documents.}
+\section{MIS of User Interface Module} \label{UserIntMod}
 
 \subsection{Module}
 
-\wss{Short name for the module}
+User Interface (M2)
 
 \subsection{Uses}
 
 \subsection{Syntax}
 
+\subsubsection{Exported Types}
+
+\begin{itemize}
+  \item $\mathit{NetworkRequest}$: a network management request from the user, one of
+    $\mathsf{invite}(S)$ with $S$: set of $\mathit{DeviceID}$,
+    $\mathsf{load}(\mathit{file})$ with $\mathit{file}$: string, or
+    $\mathsf{unload}$. Each is passed to the Coordinator access program of the
+    same name (inviteDevices, loadModel, unloadModel).
+  \item $\mathit{ChatState}$ = seq of string: the conversation shown to the user.
+    The messages sent so far form the $\mathit{messages}$ field of the
+    Coordinator's $\mathit{Request}$.
+\end{itemize}
+
 \subsubsection{Exported Constants}
+
+\begin{itemize}
+  \item \texttt{REFRESH\_RATE}: $\mathbb{R}$ - frequency of interface updates (Hz)
+\end{itemize}
 
 \subsubsection{Exported Access Programs}
 
 \begin{center}
-\begin{tabular}{p{2cm} p{4cm} p{4cm} p{2cm}}
-\hline
+\begin{tabular}{p{4.0cm} p{3.8cm} p{2cm} p{3cm}}
+\toprule
 \textbf{Name} & \textbf{In} & \textbf{Out} & \textbf{Exceptions} \\
-\hline
-\wss{accessProg} & - & - & - \\
-\hline
+\midrule
+renderNetwork & state: $\mathit{Status}$ & - & RenderingError \\
+displayError & message: $\Sigma^*$ & - & - \\
+requestNetworkChange & request: $\mathit{NetworkRequest}$ & - & - \\
+sendChatMessage & message: $\Sigma^*$ & - & - \\
+renderChat & state: $\mathit{ChatState}$ & - & RenderingError \\
+\bottomrule
 \end{tabular}
 \end{center}
 
@@ -520,47 +437,29 @@ runs Core like every other node.
 
 \subsubsection{State Variables}
 
-\wss{Not all modules will have state variables.  State variables give the module
-  a memory.}
+\begin{itemize}
+  \item uiState: Abstract UI representation
+  \item NetworkState: State of device network, the most recent snapshot of the network and its metrics, a $\mathit{Status}$ from Coordinator.getStatus
+  \item ChatState: Current chat session shown to the user, a $\mathit{ChatState}$
+\end{itemize}
 
 \subsubsection{Environment Variables}
 
-\wss{This section is not necessary for all modules.  Its purpose is to capture
-  when the module has external interaction with the environment, such as for a
-  device driver, screen interface, keyboard, file, etc.}
+\begin{itemize}
+  \item window: display managed by the browser and operating system.
+\end{itemize}
 
 \subsubsection{Assumptions}
 
-\wss{Try to minimize assumptions and anticipate programmer errors via
-  exceptions, but for practical purposes assumptions are sometimes appropriate.}
-
 \subsubsection{Access Routine Semantics}
-
-\noindent \wss{accessProg}():
-\begin{itemize}
-\item transition: \wss{if appropriate} 
-\item output: \wss{if appropriate} 
-\item exception: \wss{if appropriate} 
-\end{itemize}
-
-\wss{A module without environment variables or state variables is unlikely to
-  have a state transition.  In this case a state transition can only occur if
-  the module is changing the state of another module.}
-
-\wss{Modules rarely have both a transition and an output.  In most cases you
-  will have one or the other.}
 
 \subsubsection{Local Functions}
 
-\wss{As appropriate} \wss{These functions are for the purpose of specification.
-  They are not necessarily something that is going to be implemented
-  explicitly.  Even if they are implemented, they are not exported; they only
-  have local scope.}
+\subsubsection{Exceptions}
 
-\newpage
-
-\bibliographystyle {plainnat}
-\bibliography {../../../refs/References}
+\begin{itemize}
+  \item RenderingError: renderNetwork or renderChat cannot display its state.
+\end{itemize}
 
 \newpage
 
@@ -572,21 +471,11 @@ runs Core like every other node.
 
 \subsection{AI Tools Used}
 
-Claude Sonnet 5.5
-
-\subsection{How and Where Used}
-
-Sonnet 5.5 was used to expand upon initial content in the MIS for the user interface module. Although all original ideas (uses, syntax, and semantics) were provided manually, generative AI was used to improve the quality of the section by providing more detail and
-adding the anticipated changes.
-
-\subsection{Verification of AI-Generated Content}
-
-Any generated content was proofread and verified to confirm accuracy and alignment with existing team objectives and documentation.
 \begin{itemize}
-    \item Anthropic Claude Opus 5.5, used through Claude Code.
+  \item Anthropic Claude Sonnet 5.5
+  \item Anthropic Claude Opus 5.5, used through Claude Code.
 \end{itemize}
 
-\wss{Give the name of the AI tool(s) used and the version.}
 
 \subsection{How and Where Used}
 
@@ -598,35 +487,19 @@ Any generated content was proofread and verified to confirm accuracy and alignme
     types and access programs. Claude also drafted the Introduction, the
     Notation section, the Module Decomposition table and the Symbols,
     Abbreviations and Acronyms table.
+    \item \textbf{Expansion of User Interfcae MIS}: Sonnet 5.5 was used to expand 
+    upon initial content in the MIS for the user interface module. Although all 
+    original ideas were provided manually, generative AI was used to improve the 
+    quality of the section by providing more detail.
 \end{itemize}
-
-\wss{Explain what the tool(s) were used for.  Examples include: brainstorming,
-explaining a technical concept, reviewing the document, generating or modifying
-text, generating or modifying diagrams, identifying errors or omissions or
-inconsistencies.}
-
-\wss{For each of the uses, identify which parts of the document were affected.}
-
-\wss{You do not need to report every interaction, but you should disclose the 
-uses that materially contributed to your work}
 
 \subsection{Verification of AI-Generated Content}
 
 The access programs of the Coordinator and Core were checked against each other
 so that every call the Coordinator makes on Core exists in Core's
 specification, and every type used is defined. The symbolic constants and
-state names were checked against the SRS.
-
-\wss{\begin{itemize}
-    \item Describe how the team checked AI-generated or AI-assisted material
-    before including it in the document.
-    \item In particular, verify factual claims, technical assertions,
-    requirements, calculations, references, and other information for which an
-    AI system may produce incorrect or fabricated results.
-    \item \textbf{The team is responsible for the accuracy, completeness,
-consistency, and appropriateness of the submitted document, regardless of
-whether material was generated by a human or an AI system.}
-\end{itemize}}
+state names were checked against the SRS. The user interface MIS was verified
+against existing documentation (SRS) and proofread for correctness.
 
 \newpage{}
 
