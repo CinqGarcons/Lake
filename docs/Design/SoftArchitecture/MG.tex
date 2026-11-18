@@ -76,7 +76,7 @@ This section records information for easy reference.
   R & Requirement\\
   SC & Scientific Computing \\
   SRS & Software Requirements Specification\\
-  \progname & Explanation of program name\\
+  \progname & Distributed system for local artificial intelligence inference. \\
   UC & Unlikely Change \\
   \wss{etc.} & \wss{...}\\
   \bottomrule
@@ -200,6 +200,15 @@ change.
 \item[\refstepcounter{acnum} \actheacnum \label{acUI}:] Whether the user runs
   \progname{} through a graphical interface or a headless command line.
   Related to LC.6.
+\item[\refstepcounter{acnum} \actheacnum \label{acUILayout}:] The layout and
+  visual design of the Lake Client user interface (network graph, metrics
+  display, and chat view). These will likely change based on user feedback.
+\item[\refstepcounter{acnum} \actheacnum \label{acMetrics}:] The set of device and
+  network health and performance metrics displayed to the user, and how they are
+  presented (e.g., bottleneck highlighting).
+\item[\refstepcounter{acnum} \actheacnum \label{acCoordAPI}:] The request and
+  response format of the Coordinator's REST API, as consumed by the user
+  interface.
 \end{description}
 
 \subsection{Unlikely Changes} \label{SecUchange}
@@ -212,6 +221,16 @@ will potentially need to be modified. Hence, it is not intended that these
 decisions will be changed.
 
 \begin{description}
+\item[\refstepcounter{ucnum} \uctheucnum \label{ucIO}:] Input/Output devices accepted
+by the system will not change from the following: Input - File, Keyboard, Mouse, and Output - 
+File, Keyboard, Mouse.
+\item[\refstepcounter{ucnum} \uctheucnum \label{ucREST}:] The REST API host that the user
+interface will rely on is unlikely to change, since the Coordinator module is responsible for handling all external APIs. 
+\item[\refstepcounter{ucnum} \uctheucnum \label{ucOtherAPI}:] The Lake Client will only contact the Coordinator for
+information and requests in the system. Any additional APIs beyond the one between the interface and the Coordinator 
+are unlikely to be added.
+\item[\refstepcounter{ucnum} \uctheucnum \label{ucFEFramework}:] The Lake Client user interface's frontend framework is highly unlikely to change.
+This is due to the significant rewriting effort that would be required to change the module from one framework to another.
 \item[\refstepcounter{ucnum} \uctheucnum \label{ucInference}:] \progname{} runs
   inference only, with no training or fine-tuning.
 \item[\refstepcounter{ucnum} \uctheucnum \label{ucGGUF}:] Models are given to
@@ -247,7 +266,7 @@ actually be implemented.
 \item [\mitem{mCoordinator}:] Coordinator Module
 \item [\mitem{mCore}:] Core Module
 \item [\mitem{mIE}:] Inference Engine Module
-\item [\mitem{mLC}:] Lake Client Module
+\item [\mitem{mLC}:] Lake Client (User Interface) Module
 \item [\mitem{mPartition}:] Partition Module
 \item [\mitem{mTIO}:] Tensor I/O Module
 \end{description}
@@ -283,12 +302,14 @@ The design of the system is intended to satisfy the requirements developed in
 the SRS. In this stage, the system is decomposed into modules. The connection
 between requirements and modules is listed in Table~\ref{TblRT}.
 
-\wss{The intention of this section is to document decisions that are made
-  ``between'' the requirements and the design.  To satisfy some requirements,
-  design decisions need to be made.  Rather than make these decisions implicit,
-  they are explicitly recorded here.  For instance, if a program has security
-  requirements, a specific design decision may be made to satisfy those
-  requirements with a password.}
+The following design decisions connect the Lake Client module (\mref{mLC}) to the SRS:
+\begin{itemize}
+\item \textbf{Device discovery, selection, and model choice} (FR.S.5.1, FR.S.5.2, FR.S.5.3): The Lake Client lists the devices found by the Coordinator, lets the user choose which to include, and lets the user pick a GGUF model file. It passes these choices to the Coordinator as network requests and does not communicate with other nodes itself.
+\item \textbf{Infeasible partitioning} (FR.S.5.4): The Model Partitioner reports a failure through the Coordinator, and the Lake Client displays the error to the user.
+\item \textbf{Metrics and bottlenecks} (FR.S.5.5, FR.S.5.6): The Lake Client only renders the latest metrics snapshot provided by the Coordinator, for the network, each node, and each connection, and highlights the bottleneck the Coordinator identifies. It does not store metric history.
+\item \textbf{Usability} (NFR.S.1, NFR.S.2, NFR.S.7): The layout and visual design are hidden inside this module (\acref{acUILayout}) so they can be revised after usability testing without affecting other modules.
+\item \textbf{Chat interface}: The chat view is a convenience for starting and continuing inference sessions from the Lake Client. All inference requests are routed through the Coordinator, which serves the OpenAI-compatible API (FR.S.1.9).
+\end{itemize}
 
 \section{Module Decomposition} \label{SecMD}
 
@@ -336,15 +357,18 @@ to be implemented.
 \item[Implemented By:] --
 \end{description}
 
-\subsubsection{Input Format Module (\mref{mInput})}
+\subsubsection{Coordinator Module (\mref{mCoordinator})} \label{sec:mCoordinator}
 
 \begin{description}
-\item[Secrets:]The format and structure of the input data.
-\item[Services:]Converts the input data into the data structure used by the
-  input parameters module.
-\item[Implemented By:] [Your Program Name Here]
-\item[Type of Module:] [Record, Library, Abstract Object, or Abstract Data Type]
-  [Information to include for leaf modules in the decomposition by secrets tree.]
+\item[Secrets:] How the Lake network is formed, monitored and rebuilt, and how
+  inference requests enter and leave it.
+\end{description}
+
+\subsubsection{Core Module (\mref{mCore})} \label{sec:mCore}
+
+\begin{description}
+\item[Secrets:] How a node joins a Lake network, holds its partition and
+  reports its health.
 \end{description}
 
 \subsubsection{Inference Engine Module (\mref{mIE})} \label{sec:mIE}
@@ -354,8 +378,12 @@ to be implemented.
   including each request's KV cache and token sampling.
 \end{description}
 
-\subsubsection{Etc.}
+\subsubsection{Lake Client (User Interface) (\mref{mLC})} \label{sec:mLC}
 
+\begin{description}
+\item[Secrets:] Implementation of design choices with regards to user interfaces and user experience,
+routing of requests and underlying services.
+\end{description}
 
 \subsection{Software Decision Module}
 
@@ -403,6 +431,11 @@ NFR.S.8 & \mref{mGGML}\\
 NFR.S.13 & \mref{mGGML}\\
 NFR.S.14 & \mref{mGGML}\\
 NFR.S.15 & \mref{mGGML}\\
+FR.S.5.1, FR.S.5.2, FR.S.5.3 & \mref{mLC}\\
+FR.S.5.4 & \mref{mLC}\\
+FR.S.5.5, FR.S.5.6 & \mref{mLC}\\
+NFR.S.1, NFR.S.2, NFR.S.7 & \mref{mLC}\\
+% Add rows for the other modules here.
 \bottomrule
 \end{tabular}
 \caption{Trace Between Requirements and Modules}
@@ -431,6 +464,9 @@ NFR.S.15 & \mref{mGGML}\\
 \acref{acThresholds} & \mref{mCore}\\
 \acref{acAPI} & \mref{mCoordinator}\\
 \acref{acUI} & \mref{mLC}\\
+\acref{acUILayout} & \mref{mLC}\\
+\acref{acMetrics} & \mref{mLC}\\
+\acref{acCoordAPI} & \mref{mCoordinator}\\
 \bottomrule
 \end{tabular}
 \caption{Trace Between Anticipated Changes and Modules}
@@ -493,12 +529,11 @@ it is not appropriate for a given project.}
 
 \section{Generative AI Use Disclosure}
 
-\wss{ChatGPT (version 5) was used to brainstorm ideas for the template for this disclose section.}
-
 \subsection{AI Tools Used}
 
 \begin{itemize}
     \item Anthropic Claude Opus 5.5, used through Claude Code.
+    \item Anthropic Claude Sonnet 5.5.
 \end{itemize}
 
 \wss{Give the name of the AI tool(s) used and the version.}
@@ -512,6 +547,10 @@ it is not appropriate for a given project.}
     to a module. We reviewed the list and the module for each change.
     \item \textbf{GGML and Inference Engine entries}: Claude drafted the
     secrets and the trace table rows for these two modules.
+    \item \textbf{Lake Client (User Interface) entry}: Sonnet 5.5 was used to
+    assist in the mapping between the Lake Client module and the SRS contents
+    for the connection between requirements and design, along with the
+    traceability table.
 \end{itemize}
 
 \wss{Explain what the tool(s) were used for.  Examples include: brainstorming,
@@ -528,7 +567,9 @@ uses that materially contributed to your work}
 
 We checked that every SRS likely change has a matching anticipated change, that
 each anticipated change maps to one module, and that the requirement IDs in the
-trace table exist in the SRS.
+trace table exist in the SRS. Content generated for the Lake Client entry was
+proofread and verified to confirm accuracy and alignment with existing team
+objectives and documentation.
 
 \wss{\begin{itemize}
     \item Describe how the team checked AI-generated or AI-assisted material
