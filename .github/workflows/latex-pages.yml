@@ -120,10 +120,6 @@ jobs:
           # pdflatex finds lmodern.sty but not the fonts it maps to, failing
           # with "Font rm-lmr7 at 600 not found".
           sudo updmap-sys >/dev/null
-          # ...and fmtutil-sys is what builds the format files. Without it
-          # pdflatex builds pdflatex.fmt on demand, which fails under pandoc
-          # with "I can't find the format file `pdflatex.fmt'".
-          sudo fmtutil-sys --byfmt pdflatex >/dev/null
 
           # Cached packages also skip the postinst that registers bibtex's
           # alternatives link. Restore it when only the real binary exists.
