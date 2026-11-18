@@ -103,7 +103,9 @@ jobs:
         uses: awalsh128/cache-apt-pkgs-action@553a35bb8ebd9fcabcb1c9451aa4c98e1b4ca8a9 # v1.6.3
         with:
           packages: texlive-latex-extra texlive-science texlive-fonts-extra texlive-fonts-recommended texlive-latex-recommended lmodern pandoc
-          version: 1.1
+          # Bump to discard a bad cache. 1.1 was saved empty after an apt
+          # mirror 404 left the clean install with no packages.
+          version: 1.2
       - name: Verify the TeX toolchain is usable
         run: |
           # A restored cache that skipped texlive's postinst would leave
