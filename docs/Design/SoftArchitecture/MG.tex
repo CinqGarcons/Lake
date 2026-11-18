@@ -29,7 +29,11 @@
 
 \newcounter{mnum}
 \newcommand{\mthemnum}{M\themnum}
-\newcommand{\mref}[1]{M\ref{#1}}
+% Module numbers. \mitem{key} numbers a module in the hierarchy table and
+% links the number to the module's entry, labelled sec:key, in the Module
+% Decomposition section. \mref{key} prints the number with the same link.
+\newcommand{\mref}[1]{\hyperref[sec:#1]{M\ref*{#1}}}
+\newcommand{\mitem}[1]{\refstepcounter{mnum}\label{#1}\mref{#1}}
 
 \begin{document}
 
@@ -157,16 +161,46 @@ adapted here is called design for
 change.
 
 \begin{description}
-\item[\refstepcounter{acnum} \actheacnum \label{acHardware}:] The specific
-  hardware on which the software is running.
-\item[\refstepcounter{acnum} \actheacnum \label{acInput}:] The format of the
-  initial input data.
-\item ...
+\item[\refstepcounter{acnum} \actheacnum \label{acHardware}:] The hardware and
+  operating system of each node (CPU architecture, GPU backend such as Metal,
+  CUDA, Vulkan or ROCm, and later Android and iOS). Related to LC.2.
+\item[\refstepcounter{acnum} \actheacnum \label{acTensorLib}:] The tensor
+  library used for layer computations, and its version.
+\item[\refstepcounter{acnum} \actheacnum \label{acWeights}:] How model weights
+  are read from disk and stored in memory, and which quantization types are
+  supported.
+\item[\refstepcounter{acnum} \actheacnum \label{acArch}:] The model
+  architectures \progname{} can run.
+\item[\refstepcounter{acnum} \actheacnum \label{acKV}:] What happens to the
+  key-value (KV) cache when a node's layers change (moved, recomputed or
+  discarded).
+\item[\refstepcounter{acnum} \actheacnum \label{acSampling}:] How output tokens
+  are sampled.
+\item[\refstepcounter{acnum} \actheacnum \label{acTensorFormat}:] How hidden states
+  sent between nodes are encoded and compressed.
+\item[\refstepcounter{acnum} \actheacnum \label{acTransport}:] The transport and
+  serialization used between nodes (gRPC with Protocol Buffers, raw TCP,
+  ZeroMQ or QUIC).
+\item[\refstepcounter{acnum} \actheacnum \label{acSecurity}:] Encryption and
+  authentication of traffic between nodes. Related to LC.3.
+\item[\refstepcounter{acnum} \actheacnum \label{acSplit}:] The algorithm that
+  decides where the model is split and which node gets each part.
+\item[\refstepcounter{acnum} \actheacnum \label{acHealth}:] The health data a
+  node reports, such as free memory and token throughput.
+\item[\refstepcounter{acnum} \actheacnum \label{acJoin}:] How a device agrees to
+  join a Lake network (manual confirmation, or automatic for trusted devices).
+  Related to LC.4.
+\item[\refstepcounter{acnum} \actheacnum \label{acLeader}:] What happens when the
+  leader node fails. Related to LC.1.
+\item[\refstepcounter{acnum} \actheacnum \label{acThresholds}:] The thresholds
+  and intervals for detecting failed nodes and leaders. Related to LC.5.
+\item[\refstepcounter{acnum} \actheacnum \label{acAPI}:] The format of the
+  application programming interface (API) that applications send requests
+  to.
+\item[\refstepcounter{acnum} \actheacnum \label{acUI}:] Whether the user runs
+  \progname{} through a graphical interface or a headless command line.
+  Related to LC.6.
 \end{description}
-
-\wss{Anticipated changes relate to changes that would be made in requirements,
-design or implementation choices.  They are not related to changes that are made
-at run-time, like the values of parameters.}
 
 \subsection{Unlikely Changes} \label{SecUchange}
 
@@ -178,9 +212,27 @@ will potentially need to be modified. Hence, it is not intended that these
 decisions will be changed.
 
 \begin{description}
-\item[\refstepcounter{ucnum} \uctheucnum \label{ucIO}:] Input/Output devices
-  (Input: File and/or Keyboard, Output: File, Memory, and/or Screen).
-\item ...
+\item[\refstepcounter{ucnum} \uctheucnum \label{ucInference}:] \progname{} runs
+  inference only, with no training or fine-tuning.
+\item[\refstepcounter{ucnum} \uctheucnum \label{ucGGUF}:] Models are given to
+  \progname{} as GGUF files.
+\item[\refstepcounter{ucnum} \uctheucnum \label{ucLocal}:] Requests and model
+  data never leave the Lake network.
+\item[\refstepcounter{ucnum} \uctheucnum \label{ucQuant}:] \progname{} does not
+  quantize models itself.
+\item[\refstepcounter{ucnum} \uctheucnum \label{ucOneModel}:] A Lake network
+  runs one model at a time.
+\item[\refstepcounter{ucnum} \uctheucnum \label{ucEntry}:] Requests enter the
+  Lake network only through the leader node's API.
+\item[\refstepcounter{ucnum} \uctheucnum \label{ucPipeline}:] Each node holds a
+  consecutive range of layers. Tensors inside a layer are never split across
+  nodes.
+\item[\refstepcounter{ucnum} \uctheucnum \label{ucDecoder}:] Models are
+  decoder-only transformers.
+\item[\refstepcounter{ucnum} \uctheucnum \label{ucLAN}:] All nodes are on the
+  same local area network.
+\item[\refstepcounter{ucnum} \uctheucnum \label{ucLang}:] The Coordinator is
+  written in Python and the Inference Engine in Rust.
 \end{description}
 
 \section{Module Hierarchy} \label{SecMH}
@@ -191,10 +243,14 @@ below, which are leaves in the hierarchy tree, are the modules that will
 actually be implemented.
 
 \begin{description}
-\item [\refstepcounter{mnum} \mthemnum \label{mHH}:] Hardware-Hiding Module
-\item ...
+\item [\mitem{mGGML}:] GGML Module
+\item [\mitem{mCoordinator}:] Coordinator Module
+\item [\mitem{mCore}:] Core Module
+\item [\mitem{mIE}:] Inference Engine Module
+\item [\mitem{mLC}:] Lake Client Module
+\item [\mitem{mPartition}:] Partition Module
+\item [\mitem{mTIO}:] Tensor I/O Module
 \end{description}
-
 
 \begin{table}[h!]
 \centering
@@ -203,22 +259,17 @@ actually be implemented.
 \textbf{Level 1} & \textbf{Level 2}\\
 \midrule
 
-{Hardware-Hiding Module} & ~ \\
+{Hardware-Hiding Module} & \mref{mGGML}: GGML Module\\
 \midrule
 
-\multirow{7}{0.3\textwidth}{Behaviour-Hiding Module} & ?\\
-& ?\\
-& ?\\
-& ?\\
-& ?\\
-& ?\\
-& ?\\ 
-& ?\\
+\multirow{4}{0.3\textwidth}{Behaviour-Hiding Module} & \mref{mCoordinator}: Coordinator Module\\
+& \mref{mCore}: Core Module\\
+& \mref{mIE}: Inference Engine Module\\
+& \mref{mLC}: Lake Client Module\\
 \midrule
 
-\multirow{3}{0.3\textwidth}{Software Decision Module} & {?}\\
-& ?\\
-& ?\\
+\multirow{2}{0.3\textwidth}{Software Decision Module} & \mref{mPartition}: Partition Module\\
+& \mref{mTIO}: Tensor I/O Module\\
 \bottomrule
 
 \end{tabular}
@@ -255,7 +306,7 @@ Only the leaf modules in the hierarchy have to be implemented. If a dash
 (\emph{--}) is shown, this means that the module is not a leaf and will not have
 to be implemented.
 
-\subsection{Hardware Hiding Modules (\mref{mHH})}
+\subsection{Hardware Hiding Modules}
 
 \begin{description}
 \item[Secrets:]The data structure and algorithm used to implement the virtual
@@ -263,7 +314,14 @@ to be implemented.
 \item[Services:]Serves as a virtual hardware used by the rest of the
   system. This module provides the interface between the hardware and the
   software. So, the system can use it to display outputs or to accept inputs.
-\item[Implemented By:] OS
+\item[Implemented By:] --
+\end{description}
+
+\subsubsection{GGML Module (\mref{mGGML})} \label{sec:mGGML}
+
+\begin{description}
+\item[Secrets:] The tensor library and compute backend used on a node's CPU or
+  GPU, and how model weights are loaded into memory.
 \end{description}
 
 \subsection{Behaviour-Hiding Module}
@@ -287,6 +345,13 @@ to be implemented.
 \item[Implemented By:] [Your Program Name Here]
 \item[Type of Module:] [Record, Library, Abstract Object, or Abstract Data Type]
   [Information to include for leaf modules in the decomposition by secrets tree.]
+\end{description}
+
+\subsubsection{Inference Engine Module (\mref{mIE})} \label{sec:mIE}
+
+\begin{description}
+\item[Secrets:] How a partition is computed for each model architecture,
+  including each request's KV cache and token sampling.
 \end{description}
 
 \subsubsection{Etc.}
@@ -320,17 +385,18 @@ requirements and between the modules and the anticipated changes.
 \toprule
 \textbf{Req.} & \textbf{Modules}\\
 \midrule
-R1 & \mref{mHH}, \mref{mInput}, \mref{mParams}, \mref{mControl}\\
-R2 & \mref{mInput}, \mref{mParams}\\
-R3 & \mref{mVerify}\\
-R4 & \mref{mOutput}, \mref{mControl}\\
-R5 & \mref{mOutput}, \mref{mODEs}, \mref{mControl}, \mref{mSeqDS}, \mref{mSolver}, \mref{mPlot}\\
-R6 & \mref{mOutput}, \mref{mODEs}, \mref{mControl}, \mref{mSeqDS}, \mref{mSolver}, \mref{mPlot}\\
-R7 & \mref{mOutput}, \mref{mEnergy}, \mref{mControl}, \mref{mSeqDS}, \mref{mPlot}\\
-R8 & \mref{mOutput}, \mref{mEnergy}, \mref{mControl}, \mref{mSeqDS}, \mref{mPlot}\\
-R9 & \mref{mVerifyOut}\\
-R10 & \mref{mOutput}, \mref{mODEs}, \mref{mControl}\\
-R11 & \mref{mOutput}, \mref{mODEs}, \mref{mEnergy}, \mref{mControl}\\
+FR.S.3.1 & \mref{mIE}, \mref{mGGML}\\
+FR.S.3.2 & \mref{mIE}, \mref{mGGML}\\
+FR.S.3.3 & \mref{mIE}\\
+FR.S.3.4 & \mref{mIE}\\
+FR.S.3.5 & \mref{mIE}\\
+NFR.S.4 & \mref{mIE}, \mref{mGGML}\\
+NFR.S.5 & \mref{mIE}\\
+NFR.S.6 & \mref{mIE}\\
+NFR.S.8 & \mref{mGGML}\\
+NFR.S.13 & \mref{mGGML}\\
+NFR.S.14 & \mref{mGGML}\\
+NFR.S.15 & \mref{mGGML}\\
 \bottomrule
 \end{tabular}
 \caption{Trace Between Requirements and Modules}
@@ -343,18 +409,22 @@ R11 & \mref{mOutput}, \mref{mODEs}, \mref{mEnergy}, \mref{mControl}\\
 \toprule
 \textbf{AC} & \textbf{Modules}\\
 \midrule
-\acref{acHardware} & \mref{mHH}\\
-\acref{acInput} & \mref{mInput}\\
-\acref{acParams} & \mref{mParams}\\
-\acref{acVerify} & \mref{mVerify}\\
-\acref{acOutput} & \mref{mOutput}\\
-\acref{acVerifyOut} & \mref{mVerifyOut}\\
-\acref{acODEs} & \mref{mODEs}\\
-\acref{acEnergy} & \mref{mEnergy}\\
-\acref{acControl} & \mref{mControl}\\
-\acref{acSeqDS} & \mref{mSeqDS}\\
-\acref{acSolver} & \mref{mSolver}\\
-\acref{acPlot} & \mref{mPlot}\\
+\acref{acHardware} & \mref{mGGML}\\
+\acref{acTensorLib} & \mref{mGGML}\\
+\acref{acWeights} & \mref{mGGML}\\
+\acref{acArch} & \mref{mIE}\\
+\acref{acKV} & \mref{mIE}\\
+\acref{acSampling} & \mref{mIE}\\
+\acref{acTensorFormat} & \mref{mTIO}\\
+\acref{acTransport} & \mref{mTIO}\\
+\acref{acSecurity} & \mref{mTIO}\\
+\acref{acSplit} & \mref{mPartition}\\
+\acref{acHealth} & \mref{mCore}\\
+\acref{acJoin} & \mref{mCore}\\
+\acref{acLeader} & \mref{mCore}\\
+\acref{acThresholds} & \mref{mCore}\\
+\acref{acAPI} & \mref{mCoordinator}\\
+\acref{acUI} & \mref{mLC}\\
 \bottomrule
 \end{tabular}
 \caption{Trace Between Anticipated Changes and Modules}
@@ -421,9 +491,22 @@ it is not appropriate for a given project.}
 
 \subsection{AI Tools Used}
 
+\begin{itemize}
+    \item Anthropic Claude Opus 5.5, used through Claude Code.
+\end{itemize}
+
 \wss{Give the name of the AI tool(s) used and the version.}
 
 \subsection{How and Where Used}
+
+\begin{itemize}
+    \item \textbf{Anticipated and Unlikely Changes}: Claude proposed the
+    anticipated and unlikely changes, working from the SRS, the Hazard Analysis
+    assumptions and the Development Plan, and matched each anticipated change
+    to a module. We reviewed the list and the module for each change.
+    \item \textbf{GGML and Inference Engine entries}: Claude drafted the
+    secrets and the trace table rows for these two modules.
+\end{itemize}
 
 \wss{Explain what the tool(s) were used for.  Examples include: brainstorming,
 explaining a technical concept, reviewing the document, generating or modifying
@@ -436,6 +519,10 @@ inconsistencies.}
 uses that materially contributed to your work}
 
 \subsection{Verification of AI-Generated Content}
+
+We checked that every SRS likely change has a matching anticipated change, that
+each anticipated change maps to one module, and that the requirement IDs in the
+trace table exist in the SRS.
 
 \wss{\begin{itemize}
     \item Describe how the team checked AI-generated or AI-assisted material
