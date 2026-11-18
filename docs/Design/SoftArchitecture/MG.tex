@@ -378,12 +378,6 @@ routing of requests and underlying services.
 \begin{description}
 \item[Secrets:] The algorithm for choosing model
   partition boundaries and assigning them to devices.
-\item[Services:] Produces an allocation scheme from model memory
-  estimates and device capability measurements supplied by Coordinator. The
-  scheme covers the complete model in consecutive partitions, fits each 
-  device's usable memory and uses at least \textit{MIN\_NODES}
-  devices for distributed inference. Reports failure when no valid scheme
-  exists. Coordinator applies the scheme and manages loading and recovery.
 \item[Implemented By:] \progname{}
 \item[Type of Module:] Library
 \end{description}
@@ -515,6 +509,12 @@ needed. Drawings, Sketches, Figma}
 \begingroup
 \setlength{\emergencystretch}{3em}
 Lake's modules will use a variety of communication protocols and interfaces to allow the different modules to communicate with one another as well as handle communication failures.
+\newline
+\newline
+Symbolic constants \textit{HEALTH\_INTERVAL},
+\textit{LEADER\_TIMEOUT}, \textit{RECOVERY\_LIMIT}, and
+\textit{MIN\_NODES} follow the definitions provided in they
+SRS Symbolic Constants appendix.
 
 \begin{center}
 \small
