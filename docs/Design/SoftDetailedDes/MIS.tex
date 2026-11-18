@@ -19,6 +19,7 @@
 \usepackage[section]{placeins}
 \usepackage{caption}
 \usepackage{fullpage}
+\usepackage{amssymb}
 
 \hypersetup{
 bookmarks=true,     % show bookmarks bar?
@@ -164,7 +165,7 @@ Inference Engine
 
 \subsection{Uses}
 
-GGML (Section~\ref{mis:ggml}), Tensor I/O
+GGML (Section~\ref{mis:ggml}), Tensor I/O (Section~\ref{mis:tensorio})
 
 \subsection{Syntax}
 
@@ -351,6 +352,92 @@ weights outside its partition.\par}
 \end{itemize}
 
 \newpage
+
+\section{MIS of Tensor I/O} \label{mis:tensorio}
+
+\subsection{Module}
+
+Tensor I/O
+
+\subsection{Uses}
+
+GGML (Section~\ref{mis:ggml})
+
+\subsection{Syntax}
+
+\subsubsection{Exported Types}
+
+\begin{itemize}
+	\item $\mathit{SocketAddrV4} = (
+		\mathit{host}: \mathit{IPAddress},
+		\mathit{port}: \{p \in \mathbb{N}_0|0 \leq p \leq 65535\}
+		)$
+	\item $\mathit{SocketAddrV6} = (
+		\mathit{host}: \mathit{IPAddress},
+		\mathit{port}: \{p \in \mathbb{N}_0|0 \leq p \leq 65535\},
+		\mathit{scope}: \mathbb{N} \cup \mathit{null}
+		)$
+	\item $\mathit{SocketAddr} = \mathit{SocketAddrV4} \cup \mathit{SocketAddrV6}$
+	\item $\mathit{Step} = (
+		\mathit{requestID}: string,
+		\mathit{activations}: \mathit{Tensor},
+		\mathit{temperature}: \{t \in \mathbb{R}|0 \leq t \leq 2\}
+		)$
+\end{itemize}
+
+\noindent The $\mathit{Tensor}$ type belongs to GGML.
+
+\subsubsection{Exported Access Programs}
+
+\begin{center}
+\begin{tabular}{p{3cm} p{4.5cm} p{1.5cm} p{3.9cm}}
+\toprule
+\textbf{Name} & \textbf{In} & \textbf{Out} & \textbf{Exceptions} \\
+\midrule
+connect & $\mathit{upstream:} \mathit{SocketAddr}$, $\mathit{downstream:} \mathit{SocketAddr}$ & -- &
+	\mbox{ConnectionRefused}, \mbox{Unreachable}, \mbox{ConnectionTimeout}, \mbox{ConnectionReset}, \mbox{AddressInUse},
+	\mbox{AddressNotAvailable}, \mbox{ExistingConnection} \\
+disconnect & -- & -- & \mbox{NoExistingConnection} \\
+send & $\mathit{step}: \mathit{Step}$ & -- &
+	\mbox{NoExistingConnection}, \mbox{ConnectionTimeout}, \mbox{ConnectionReset} \\
+recv & -- & $\mathit{Step}$ &
+	\mbox{NoExistingConnection}, \mbox{ConnectionTimeout}, \mbox{ConnectionReset} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent connect, disconnect, send, and recv are called by the Inference Engine.
+
+\subsection{Semantics}
+
+\subsubsection{State Variables}
+
+\begin{itemize}
+	\item $\mathit{connected}: \mathbb{B}$, whether this node is connected to upstream/downstream
+		peers.
+	\item $\mathit{upstream}: \mathit{SocketAddr} \cup \mathit{null}$, the upstream node's address.
+	\item $\mathit{downstream}: \mathit{SocketAddr} \cup \mathit{null}$, the downstream node's address.
+\end{itemize}
+
+\subsubsection{Environment Variables}
+
+\begin{itemize}
+	\item The device's networking stack, through which upstream/downstream nodes will be connected.
+\end{itemize}
+
+\subsubsection{Exceptions}
+\begin{itemize}
+	\item ExistingConnection: Connections with upstream/downstream already exist. Must first
+		disconnect before calling connect.
+	\item NoExistingConnection: Connections with upstream/downstream don't exist. Must first connect
+		before calling disconnect, send, or recv.
+	\item ConnectionRefused: Peer is reachable, but nothing is listening on the given port.
+	\item Unreachable: No route to given host.
+	\item ConnectionTimeout: Response from peer is not received within allowed time.
+	\item ConnectionReset: Peer closed the connection abruptly.
+	\item AddressInUse: Attempted to bind to an endpoint is already bound by another application.
+	\item AddressNotAvailable: Attempted to bind to an invalid endpoint.
+\end{itemize}
 
 \newpage
 
