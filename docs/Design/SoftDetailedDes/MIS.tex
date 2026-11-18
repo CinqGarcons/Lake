@@ -194,6 +194,103 @@ The following table is taken directly from the Module Guide document for this pr
 \newpage
 ~\newpage
 
+\section{MIS of GGML} \label{mis:ggml}
+
+\subsection{Module}
+
+GGML
+
+\subsection{Uses}
+
+None.
+
+\subsection{Syntax}
+
+\subsubsection{Exported Types}
+
+\begin{itemize}
+  \item $\mathit{Backend} = \{\mathsf{cpu}, \mathsf{metal}, \mathsf{cuda},
+    \mathsf{vulkan}, \mathsf{rocm}\}$
+  \item $\mathit{QuantType}$: the quantization types in the GGML version we
+    use, from eight bits down to about one bit per weight (for example
+    $\mathsf{q8\_0}$, $\mathsf{q4\_K}$, $\mathsf{iq4\_xs}$, $\mathsf{iq3\_s}$,
+    $\mathsf{iq1\_s}$ and $\mathsf{nvfp4}$).
+  \item $\mathit{DType} = \{\mathsf{f32}, \mathsf{f16}, \mathsf{bf16}\} \cup
+    \mathit{QuantType}$: 32-bit or 16-bit floating point, or a quantization type.
+  \item $\mathit{Tensor} = (\mathit{shape}: \text{seq of } \mathbb{N},
+    \mathit{type}: \mathit{DType})$: an array held in the backend's memory.
+  \item $\mathit{Op} = \{\mathsf{add}, \mathsf{mul}, \mathsf{matmul},
+    \mathsf{norm}, \mathsf{rope}, \mathsf{softmax}, \mathsf{reshape}\}$
+  \item $\mathit{Graph} = \text{seq of } (\mathit{op}: \mathit{Op},
+    \mathit{args}: \text{seq of } \mathit{Tensor})$: operations in the order
+    they run. An entry can use the results of earlier entries, and the last
+    entry's result is the output.
+\end{itemize}
+
+\subsubsection{Exported Access Programs}
+
+\begin{center}
+\begin{tabular}{p{2.6cm} p{4.4cm} p{2.6cm} p{4.0cm}}
+\toprule
+\textbf{Name} & \textbf{In} & \textbf{Out} & \textbf{Exceptions} \\
+\midrule
+backends & -- & set of $\mathit{Backend}$ & -- \\
+init & $\beta: \mathit{Backend}$ & -- & BackendUnavailable \\
+readMetadata & $\mathit{file}$: string & string $\to$ string & FileError,
+  InvalidFile \\
+readTensors & $\mathit{file}$: string, $\mathit{names}$: set of string &
+  string $\to \mathit{Tensor}$ & FileError, InvalidFile, UnknownTensor,
+  OutOfMemory \\
+alloc & $s$: seq of $\mathbb{N}$, $d: \mathit{DType}$ & $\mathit{Tensor}$ &
+  OutOfMemory \\
+compute & $g: \mathit{Graph}$ & $\mathit{Tensor}$ & InvalidGraph, OutOfMemory
+  \\
+release & $X$: set of $\mathit{Tensor}$ & -- & UnknownTensor \\
+freeMemory & -- & $\mathbb{N}$ & -- \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+{\raggedright \noindent Only the Inference Engine calls this module.
+readMetadata returns a GGUF file's metadata, such as the architecture and
+layer count. readTensors loads only the named tensors, so a node never reads
+weights outside its partition.\par}
+
+\subsection{Semantics}
+
+\subsubsection{State Variables}
+
+\begin{itemize}
+  \item $\mathit{initialised}: \mathbb{B}$
+  \item $\beta: \mathit{Backend}$, the backend in use
+  \item $\mathit{held}$: set of $\mathit{Tensor}$, the tensors currently
+    allocated
+\end{itemize}
+
+\subsubsection{Environment Variables}
+
+\begin{itemize}
+  \item The device's CPU and GPU memory, where tensors are stored.
+  \item The file system, from which GGUF files are read.
+\end{itemize}
+
+\subsubsection{Exceptions}
+
+\begin{itemize}
+  \item NotInitialised: an access program other than backends or init is
+    called before init.
+  \item BackendUnavailable: $\beta$ is not available on the device.
+  \item FileError: $\mathit{file}$ does not exist or cannot be read.
+  \item InvalidFile: $\mathit{file}$ is not a valid GGUF file.
+  \item UnknownTensor: a name in $\mathit{names}$ is not in the file, or a
+    tensor in $X$ is not held.
+  \item OutOfMemory: the new tensors do not fit in the backend's memory.
+  \item InvalidGraph: an entry's arguments have the wrong shape or type for
+    its operation.
+\end{itemize}
+
+\newpage
+
 \section{MIS of Coordinator} \label{mis:coordinator}
 
 \subsection{Module}
@@ -399,6 +496,105 @@ runs Core like every other node.
 
 \newpage
 
+\section{MIS of Inference Engine} \label{mis:ie}
+
+\subsection{Module}
+
+Inference Engine
+
+\subsection{Uses}
+
+GGML (Section~\ref{mis:ggml}), Tensor I/O (Section~\ref{mis:tensorio})
+
+\subsection{Syntax}
+
+\subsubsection{Exported Types}
+
+\begin{itemize}
+  \item $\mathit{Report}$, as in the Core module.
+  \item $\mathit{Tensor}$, as in the GGML module (Section~\ref{mis:ggml}).
+  \item $\mathit{RequestID}$: $\mathbb{N}$. One inference request. A node keeps a
+    separate key-value (KV) cache for each request.
+  \item $\mathit{Step} = (r: \mathit{RequestID}, x: \mathit{Tensor}, \tau:
+    \mathbb{R})$: one step of request $r$, received from Tensor I/O. $\tau$ is
+    the request's sampling temperature.
+\end{itemize}
+
+\subsubsection{Exported Access Programs}
+
+\begin{center}
+\begin{tabular}{p{2.6cm} p{4.6cm} p{2.0cm} p{4.4cm}}
+\toprule
+\textbf{Name} & \textbf{In} & \textbf{Out} & \textbf{Exceptions} \\
+\midrule
+init & -- & -- & -- \\
+load & $\mathit{file}$: string, $a: \mathbb{N}$, $b: \mathbb{N}$ & -- &
+  InvalidRange, UnsupportedModel, LoadFailed, Running \\
+unload & -- & -- & NotLoaded, Running \\
+start & -- & -- & NotLoaded, Running \\
+stop & -- & -- & -- \\
+endRequest & $r: \mathit{RequestID}$ & -- & UnknownRequest \\
+report & -- & $\mathit{Report}$ & NotInitialised \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+{\raggedright \noindent The Core module calls every access program. Calling
+load with a new range replaces the loaded partition. Between start and stop,
+the engine repeatedly takes the next $\mathit{Step}$ from Tensor I/O, runs $x$
+through units $a$ to $b$, and passes the result back to Tensor I/O. On the node
+holding unit 1, $x$ is a sequence of token IDs. The node holding unit $N$
+samples the next token at temperature $\tau$ and passes that on instead. A step
+with the wrong shape, or one that would take its request past
+\textit{CONTEXT\_MAX} tokens, is dropped along with that request's KV cache.
+endRequest frees a finished request's KV cache.\par}
+
+\subsection{Semantics}
+
+\subsubsection{State Variables}
+
+\begin{itemize}
+  \item $\mathit{initialised}: \mathbb{B}$
+  \item $\mathit{loaded}: \mathbb{B}$
+  \item $\mathit{running}: \mathbb{B}$
+  \item $\mathit{file}$: string, the GGUF file the partition is read from
+  \item $a, b: \mathbb{N}$, the first and last partition units held
+  \item $W$: string $\to \mathit{Tensor}$, the weights of units $a$ to $b$ by
+    name
+  \item $\mathit{kv}: \mathit{RequestID} \to \text{seq of } (k: \mathit{Tensor},
+    v: \mathit{Tensor})$, the KV cache of each active request, one entry per
+    transformer layer held
+  \item $\mathit{count}: \mathbb{N}$, tokens processed since the last
+    report
+  \item $t_\mathit{last}: \mathbb{R}$, the time of the last report
+\end{itemize}
+
+\subsubsection{Environment Variables}
+
+\begin{itemize}
+  \item $t: \mathbb{R}$, the current time in seconds.
+  \item The device's GPU-accessible memory, reached through the GGML module.
+\end{itemize}
+
+\subsubsection{Exceptions}
+
+\begin{itemize}
+  \item NotInitialised: any access program other than init is called before
+    init. Every access program other than init can raise it.
+  \item InvalidRange: $a > b$, or $b$ is greater than the number of partition
+    units in the model.
+  \item UnsupportedModel: the model's architecture is not one the Inference
+    Engine can run.
+  \item LoadFailed: the weights of units $a$ to $b$ do not fit in the node's
+    GPU-accessible memory, or the file cannot be read.
+  \item NotLoaded: start or unload is called when no partition is loaded.
+  \item Running: load, unload or start is called between start and stop.
+  \item UnknownRequest: endRequest names a request with no KV cache on this
+    node.
+\end{itemize}
+
+\newpage
+
 \section{MIS of LakeClient} \label{LCMod}
 
 \subsection{Module}
@@ -454,6 +650,99 @@ sendChatMessage & message: string & - & - \\
 
 \newpage
 
+\section{MIS of Tensor I/O} \label{mis:tensorio}
+
+\subsection{Module}
+
+Tensor I/O
+
+\subsection{Uses}
+
+GGML (Section~\ref{mis:ggml})
+
+\subsection{Syntax}
+
+\subsubsection{Exported Types}
+
+\begin{itemize}
+	\item $\mathit{SocketAddrV4} = (
+		\mathit{host}: \mathit{IPAddress},
+		\mathit{port}: \{p \in \mathbb{N}_0|0 \leq p \leq 65535\}
+		)$
+	\item $\mathit{SocketAddrV6} = (
+		\mathit{host}: \mathit{IPAddress},
+		\mathit{port}: \{p \in \mathbb{N}_0|0 \leq p \leq 65535\},
+		\mathit{scope}: \mathbb{N} \cup \mathit{null}
+		)$
+	\item $\mathit{SocketAddr} = \mathit{SocketAddrV4} \cup \mathit{SocketAddrV6}$
+	\item $\mathit{Step} = (
+		\mathit{requestID}: string,
+		\mathit{activations}: \mathit{Tensor},
+		\mathit{temperature}: \{t \in \mathbb{R}|0 \leq t \leq 2\}
+		)$
+\end{itemize}
+
+\noindent The $\mathit{Tensor}$ type belongs to GGML.
+
+\subsubsection{Exported Access Programs}
+
+\begin{center}
+\begin{tabular}{p{3cm} p{4.5cm} p{1.5cm} p{3.9cm}}
+\toprule
+\textbf{Name} & \textbf{In} & \textbf{Out} & \textbf{Exceptions} \\
+\midrule
+connect & $\mathit{upstream:} \mathit{SocketAddr}$, $\mathit{downstream:} \mathit{SocketAddr}$ & -- &
+	\mbox{ConnectionRefused}, \mbox{Unreachable}, \mbox{ConnectionTimeout}, \mbox{ConnectionReset}, \mbox{AddressInUse},
+	\mbox{AddressNotAvailable}, \mbox{ExistingConnection} \\
+disconnect & -- & -- & \mbox{NoExistingConnection} \\
+send & $\mathit{step}: \mathit{Step}$ & -- &
+	\mbox{NoExistingConnection}, \mbox{ConnectionTimeout}, \mbox{ConnectionReset} \\
+recv & -- & $\mathit{Step}$ &
+	\mbox{NoExistingConnection}, \mbox{ConnectionTimeout}, \mbox{ConnectionReset} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent connect, disconnect, send, and recv are called by the Inference Engine.
+
+\subsection{Semantics}
+
+\subsubsection{State Variables}
+
+\begin{itemize}
+	\item $\mathit{connected}: \mathbb{B}$, whether this node is connected to upstream/downstream
+		peers.
+	\item $\mathit{upstream}: \mathit{SocketAddr} \cup \mathit{null}$, the upstream node's address.
+	\item $\mathit{downstream}: \mathit{SocketAddr} \cup \mathit{null}$, the downstream node's address.
+\end{itemize}
+
+\subsubsection{Environment Variables}
+
+\begin{itemize}
+	\item The device's networking stack, through which upstream/downstream nodes will be connected.
+\end{itemize}
+
+\subsubsection{Exceptions}
+\begin{itemize}
+	\item ExistingConnection: Connections with upstream/downstream already exist. Must first
+		disconnect before calling connect.
+	\item NoExistingConnection: Connections with upstream/downstream don't exist. Must first connect
+		before calling disconnect, send, or recv.
+	\item ConnectionRefused: Peer is reachable, but nothing is listening on the given port.
+	\item Unreachable: No route to given host.
+	\item ConnectionTimeout: Response from peer is not received within allowed time.
+	\item ConnectionReset: Peer closed the connection abruptly.
+	\item AddressInUse: Attempted to bind to an endpoint is already bound by another application.
+	\item AddressNotAvailable: Attempted to bind to an invalid endpoint.
+\end{itemize}
+
+\newpage
+
+\bibliographystyle {plainnat}
+\bibliography {../../../refs/References}
+
+\newpage
+
 \newpage{}
 
 \section{Appendix --- Generative AI Use Disclosure}
@@ -480,6 +769,11 @@ sendChatMessage & message: string & - & - \\
     upon initial content in the MIS for the Lake Client module. Although all 
     original ideas were provided manually, generative AI was used to improve the 
     quality of the section by providing more detail.
+    \item \textbf{MIS of Inference Engine and MIS of GGML}: Anthropic Claude
+    Opus 5.5, used through Claude Code, drafted both specifications from the
+    SRS Inference Engine requirements, the Core module's interface and the Rust
+    crates in the repository. We reviewed the draft and decided which module
+    reads GGUF files and owns the tensor type.
 \end{itemize}
 
 \subsection{Verification of AI-Generated Content}
@@ -488,7 +782,9 @@ The access programs of the Coordinator and Core were checked against each other
 so that every call the Coordinator makes on Core exists in Core's
 specification, and every type used is defined. The symbolic constants and
 state names were checked against the SRS. The Lake Client MIS was verified
-against existing documentation (SRS) and proofread for correctness.
+against existing documentation (SRS) and proofread for correctness. We checked the Inference Engine's load and report against the calls the Core
+module makes, and checked that the Inference Engine uses every GGML access
+program.
 
 \newpage{}
 

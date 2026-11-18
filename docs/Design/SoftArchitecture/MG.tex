@@ -161,12 +161,47 @@ adapted here is called design for
 change.
 
 \begin{description}
-\item[\refstepcounter{acnum} \actheacnum \label{acHardware}:] The specific
-  hardware on which the software is running.
-\item[\refstepcounter{acnum} \actheacnum \label{acInput}:] The format of the
-  initial input data.
-\item[\refstepcounter{acnum} \actheacnum \label{acUI}:] The layout and visual design 
-  of the Lake Client user interface (network graph, metrics
+\item[\refstepcounter{acnum} \actheacnum \label{acHardware}:] The hardware and
+  operating system of each node (CPU architecture, GPU backend such as Metal,
+  CUDA, Vulkan or ROCm, and later Android and iOS). Related to LC.2.
+\item[\refstepcounter{acnum} \actheacnum \label{acTensorLib}:] The tensor
+  library used for layer computations, and its version.
+\item[\refstepcounter{acnum} \actheacnum \label{acWeights}:] How model weights
+  are read from disk and stored in memory, and which quantization types are
+  supported.
+\item[\refstepcounter{acnum} \actheacnum \label{acArch}:] The model
+  architectures \progname{} can run.
+\item[\refstepcounter{acnum} \actheacnum \label{acKV}:] What happens to the
+  key-value (KV) cache when a node's layers change (moved, recomputed or
+  discarded).
+\item[\refstepcounter{acnum} \actheacnum \label{acSampling}:] How output tokens
+  are sampled.
+\item[\refstepcounter{acnum} \actheacnum \label{acTensorFormat}:] How hidden states
+  sent between nodes are encoded and compressed.
+\item[\refstepcounter{acnum} \actheacnum \label{acTransport}:] The transport and
+  serialization used between nodes (gRPC with Protocol Buffers, raw TCP,
+  ZeroMQ or QUIC).
+\item[\refstepcounter{acnum} \actheacnum \label{acSecurity}:] Encryption and
+  authentication of traffic between nodes. Related to LC.3.
+\item[\refstepcounter{acnum} \actheacnum \label{acSplit}:] The algorithm that
+  decides where the model is split and which node gets each part.
+\item[\refstepcounter{acnum} \actheacnum \label{acHealth}:] The health data a
+  node reports, such as free memory and token throughput.
+\item[\refstepcounter{acnum} \actheacnum \label{acJoin}:] How a device agrees to
+  join a Lake network (manual confirmation, or automatic for trusted devices).
+  Related to LC.4.
+\item[\refstepcounter{acnum} \actheacnum \label{acLeader}:] What happens when the
+  leader node fails. Related to LC.1.
+\item[\refstepcounter{acnum} \actheacnum \label{acThresholds}:] The thresholds
+  and intervals for detecting failed nodes and leaders. Related to LC.5.
+\item[\refstepcounter{acnum} \actheacnum \label{acAPI}:] The format of the
+  application programming interface (API) that applications send requests
+  to.
+\item[\refstepcounter{acnum} \actheacnum \label{acUI}:] Whether the user runs
+  \progname{} through a graphical interface or a headless command line.
+  Related to LC.6.
+\item[\refstepcounter{acnum} \actheacnum \label{acUILayout}:] The layout and
+  visual design of the Lake Client user interface (network graph, metrics
   display, and chat view). These will likely change based on user feedback.
 \item[\refstepcounter{acnum} \actheacnum \label{acMetrics}:] The set of device and
   network health and performance metrics displayed to the user, and how they are
@@ -196,6 +231,27 @@ information and requests in the system. Any additional APIs beyond the one betwe
 are unlikely to be added.
 \item[\refstepcounter{ucnum} \uctheucnum \label{ucFEFramework}:] The Lake Client user interface's frontend framework is highly unlikely to change.
 This is due to the significant rewriting effort that would be required to change the module from one framework to another.
+\item[\refstepcounter{ucnum} \uctheucnum \label{ucInference}:] \progname{} runs
+  inference only, with no training or fine-tuning.
+\item[\refstepcounter{ucnum} \uctheucnum \label{ucGGUF}:] Models are given to
+  \progname{} as GGUF files.
+\item[\refstepcounter{ucnum} \uctheucnum \label{ucLocal}:] Requests and model
+  data never leave the Lake network.
+\item[\refstepcounter{ucnum} \uctheucnum \label{ucQuant}:] \progname{} does not
+  quantize models itself.
+\item[\refstepcounter{ucnum} \uctheucnum \label{ucOneModel}:] A Lake network
+  runs one model at a time.
+\item[\refstepcounter{ucnum} \uctheucnum \label{ucEntry}:] Requests enter the
+  Lake network only through the leader node's API.
+\item[\refstepcounter{ucnum} \uctheucnum \label{ucPipeline}:] Each node holds a
+  consecutive range of layers. Tensors inside a layer are never split across
+  nodes.
+\item[\refstepcounter{ucnum} \uctheucnum \label{ucDecoder}:] Models are
+  decoder-only transformers.
+\item[\refstepcounter{ucnum} \uctheucnum \label{ucLAN}:] All nodes are on the
+  same local area network.
+\item[\refstepcounter{ucnum} \uctheucnum \label{ucLang}:] The Coordinator is
+  written in Python and the Inference Engine in Rust.
 \end{description}
 
 \section{Module Hierarchy} \label{SecMH}
@@ -251,7 +307,7 @@ The following design decisions connect the Lake Client module (\mref{mLC}) to th
 \item \textbf{Device discovery, selection, and model choice} (FR.S.5.1, FR.S.5.2, FR.S.5.3): The Lake Client lists the devices found by the Coordinator, lets the user choose which to include, and lets the user pick a GGUF model file. It passes these choices to the Coordinator as network requests and does not communicate with other nodes itself.
 \item \textbf{Infeasible partitioning} (FR.S.5.4): The Model Partitioner reports a failure through the Coordinator, and the Lake Client displays the error to the user.
 \item \textbf{Metrics and bottlenecks} (FR.S.5.5, FR.S.5.6): The Lake Client only renders the latest metrics snapshot provided by the Coordinator, for the network, each node, and each connection, and highlights the bottleneck the Coordinator identifies. It does not store metric history.
-\item \textbf{Usability} (NFR.S.1, NFR.S.2, NFR.S.7): The layout and visual design are hidden inside this module (\acref{acUI}) so they can be revised after usability testing without affecting other modules.
+\item \textbf{Usability} (NFR.S.1, NFR.S.2, NFR.S.7): The layout and visual design are hidden inside this module (\acref{acUILayout}) so they can be revised after usability testing without affecting other modules.
 \item \textbf{Chat interface}: The chat view is a convenience for starting and continuing inference sessions from the Lake Client. All inference requests are routed through the Coordinator, which serves the OpenAI-compatible API (FR.S.1.9).
 \end{itemize}
 
@@ -271,7 +327,7 @@ Only the leaf modules in the hierarchy have to be implemented. If a dash
 (\emph{--}) is shown, this means that the module is not a leaf and will not have
 to be implemented.
 
-\subsection{Hardware Hiding Modules (\mref{mHH})}
+\subsection{Hardware Hiding Modules}
 
 \begin{description}
 \item[Secrets:]The data structure and algorithm used to implement the virtual
@@ -279,7 +335,14 @@ to be implemented.
 \item[Services:]Serves as a virtual hardware used by the rest of the
   system. This module provides the interface between the hardware and the
   software. So, the system can use it to display outputs or to accept inputs.
-\item[Implemented By:] OS
+\item[Implemented By:] --
+\end{description}
+
+\subsubsection{GGML Module (\mref{mGGML})} \label{sec:mGGML}
+
+\begin{description}
+\item[Secrets:] The tensor library and compute backend used on a node's CPU or
+  GPU, and how model weights are loaded into memory.
 \end{description}
 
 \subsection{Behaviour-Hiding Module}
@@ -308,6 +371,13 @@ to be implemented.
   reports its health.
 \end{description}
 
+\subsubsection{Inference Engine Module (\mref{mIE})} \label{sec:mIE}
+
+\begin{description}
+\item[Secrets:] How a partition is computed for each model architecture,
+  including each request's KV cache and token sampling.
+\end{description}
+
 \subsubsection{Lake Client (User Interface) (\mref{mLC})} \label{sec:mLC}
 
 \begin{description}
@@ -328,6 +398,12 @@ routing of requests and underlying services.
 \item[Implemented By:] --
 \end{description}
 
+\subsubsection{Tensor I/O Module (\mref{mTIO})} \label{sec:mTIO}
+\begin{description}
+	\item[Secrets:] The specific compression algorithms, network performance heuristics, cpu
+		performance heuristics, and networking protocols used to transfer Tensors between devices.
+\end{description}
+
 \subsubsection{Etc.}
 
 \section{Traceability Matrix} \label{SecTM}
@@ -343,10 +419,22 @@ requirements and between the modules and the anticipated changes.
 \toprule
 \textbf{Req.} & \textbf{Modules}\\
 \midrule
-FR.S.5.1, FR.S.5.2, FR.S.5.3 & \mref{mUserInterface}\\
-FR.S.5.4 & \mref{mUserInterface}\\
-FR.S.5.5, FR.S.5.6 & \mref{mUserInterface}\\
-NFR.S.1, NFR.S.2, NFR.S.7 & \mref{mUserInterface}\\
+FR.S.3.1 & \mref{mIE}, \mref{mGGML}\\
+FR.S.3.2 & \mref{mIE}, \mref{mGGML}\\
+FR.S.3.3 & \mref{mIE}\\
+FR.S.3.4 & \mref{mIE}\\
+FR.S.3.5 & \mref{mIE}\\
+NFR.S.4 & \mref{mIE}, \mref{mGGML}\\
+NFR.S.5 & \mref{mIE}\\
+NFR.S.6 & \mref{mIE}\\
+NFR.S.8 & \mref{mGGML}\\
+NFR.S.13 & \mref{mGGML}\\
+NFR.S.14 & \mref{mGGML}\\
+NFR.S.15 & \mref{mGGML}\\
+FR.S.5.1, FR.S.5.2, FR.S.5.3 & \mref{mLC}\\
+FR.S.5.4 & \mref{mLC}\\
+FR.S.5.5, FR.S.5.6 & \mref{mLC}\\
+NFR.S.1, NFR.S.2, NFR.S.7 & \mref{mLC}\\
 % Add rows for the other modules here.
 \bottomrule
 \end{tabular}
@@ -360,18 +448,25 @@ NFR.S.1, NFR.S.2, NFR.S.7 & \mref{mUserInterface}\\
 \toprule
 \textbf{AC} & \textbf{Modules}\\
 \midrule
-\acref{acHardware} & \mref{mHH}\\
-\acref{acInput} & \mref{mInput}\\
-\acref{acParams} & \mref{mParams}\\
-\acref{acVerify} & \mref{mVerify}\\
-\acref{acOutput} & \mref{mOutput}\\
-\acref{acVerifyOut} & \mref{mVerifyOut}\\
-\acref{acODEs} & \mref{mODEs}\\
-\acref{acEnergy} & \mref{mEnergy}\\
-\acref{acControl} & \mref{mControl}\\
-\acref{acSeqDS} & \mref{mSeqDS}\\
-\acref{acSolver} & \mref{mSolver}\\
-\acref{acPlot} & \mref{mPlot}\\
+\acref{acHardware} & \mref{mGGML}\\
+\acref{acTensorLib} & \mref{mGGML}\\
+\acref{acWeights} & \mref{mGGML}\\
+\acref{acArch} & \mref{mIE}\\
+\acref{acKV} & \mref{mIE}\\
+\acref{acSampling} & \mref{mIE}\\
+\acref{acTensorFormat} & \mref{mTIO}\\
+\acref{acTransport} & \mref{mTIO}\\
+\acref{acSecurity} & \mref{mTIO}\\
+\acref{acSplit} & \mref{mPartition}\\
+\acref{acHealth} & \mref{mCore}\\
+\acref{acJoin} & \mref{mCore}\\
+\acref{acLeader} & \mref{mCore}\\
+\acref{acThresholds} & \mref{mCore}\\
+\acref{acAPI} & \mref{mCoordinator}\\
+\acref{acUI} & \mref{mLC}\\
+\acref{acUILayout} & \mref{mLC}\\
+\acref{acMetrics} & \mref{mLC}\\
+\acref{acCoordAPI} & \mref{mCoordinator}\\
 \bottomrule
 \end{tabular}
 \caption{Trace Between Anticipated Changes and Modules}
@@ -436,15 +531,56 @@ it is not appropriate for a given project.}
 
 \subsection{AI Tools Used}
 
-Claude Sonnet 5.5
+\begin{itemize}
+    \item Anthropic Claude Opus 5.5, used through Claude Code.
+    \item Anthropic Claude Sonnet 5.5.
+\end{itemize}
+
+\wss{Give the name of the AI tool(s) used and the version.}
 
 \subsection{How and Where Used}
 
-Sonnet 5.5 was used to assist in the mapping between the Lake Client (User Interface) module and the SRS contents for the connection between requirements and design, along with the traceability table.
+\begin{itemize}
+    \item \textbf{Anticipated and Unlikely Changes}: Claude proposed the
+    anticipated and unlikely changes, working from the SRS, the Hazard Analysis
+    assumptions and the Development Plan, and matched each anticipated change
+    to a module. We reviewed the list and the module for each change.
+    \item \textbf{GGML and Inference Engine entries}: Claude drafted the
+    secrets and the trace table rows for these two modules.
+    \item \textbf{Lake Client (User Interface) entry}: Sonnet 5.5 was used to
+    assist in the mapping between the Lake Client module and the SRS contents
+    for the connection between requirements and design, along with the
+    traceability table.
+\end{itemize}
+
+\wss{Explain what the tool(s) were used for.  Examples include: brainstorming,
+explaining a technical concept, reviewing the document, generating or modifying
+text, generating or modifying diagrams, identifying errors or omissions or
+inconsistencies.}
+
+\wss{For each of the uses, identify which parts of the document were affected.}
+
+\wss{You do not need to report every interaction, but you should disclose the 
+uses that materially contributed to your work}
 
 \subsection{Verification of AI-Generated Content}
 
-Any generated content was proofread and verified to confirm accuracy and alignment with existing team objectives and documentation.
+We checked that every SRS likely change has a matching anticipated change, that
+each anticipated change maps to one module, and that the requirement IDs in the
+trace table exist in the SRS. Content generated for the Lake Client entry was
+proofread and verified to confirm accuracy and alignment with existing team
+objectives and documentation.
+
+\wss{\begin{itemize}
+    \item Describe how the team checked AI-generated or AI-assisted material
+    before including it in the document.
+    \item In particular, verify factual claims, technical assertions,
+    requirements, calculations, references, and other information for which an
+    AI system may produce incorrect or fabricated results.
+    \item \textbf{The team is responsible for the accuracy, completeness,
+consistency, and appropriateness of the submitted document, regardless of
+whether material was generated by a human or an AI system.}
+\end{itemize}}
 
 \newpage{}
 
