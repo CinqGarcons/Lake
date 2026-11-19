@@ -50,8 +50,7 @@
 \begin{tabularx}{\textwidth}{p{3cm}p{2cm}X}
 \toprule {\bf Date} & {\bf Version} & {\bf Notes}\\
 \midrule
-Date 1 & 1.0 & Notes\\
-Date 2 & 1.1 & Notes\\
+November 18 & -1 & All contributors invloved.\\
 \bottomrule
 \end{tabularx}
 
@@ -78,7 +77,6 @@ This section records information for easy reference.
   SRS & Software Requirements Specification\\
   \progname & Distributed system for local artificial intelligence inference. \\
   UC & Unlikely Change \\
-  \wss{etc.} & \wss{...}\\
   \bottomrule
 \end{tabular}\\
 
@@ -329,15 +327,6 @@ to be implemented.
 
 \subsection{Hardware Hiding Modules}
 
-\begin{description}
-\item[Secrets:]The data structure and algorithm used to implement the virtual
-  hardware.
-\item[Services:]Serves as a virtual hardware used by the rest of the
-  system. This module provides the interface between the hardware and the
-  software. So, the system can use it to display outputs or to accept inputs.
-\item[Implemented By:] --
-\end{description}
-
 \subsubsection{GGML Module (\mref{mGGML})} \label{sec:mGGML}
 
 \begin{description}
@@ -346,16 +335,6 @@ to be implemented.
 \end{description}
 
 \subsection{Behaviour-Hiding Module}
-
-\begin{description}
-\item[Secrets:]The contents of the required behaviours.
-\item[Services:]Includes programs that provide externally visible behaviour of
-  the system as specified in the software requirements specification (SRS)
-  documents. This module serves as a communication layer between the
-  hardware-hiding module and the software decision module. The programs in this
-  module will need to change if there are changes in the SRS.
-\item[Implemented By:] --
-\end{description}
 
 \subsubsection{Coordinator Module (\mref{mCoordinator})} \label{sec:mCoordinator}
 
@@ -387,24 +366,11 @@ routing of requests and underlying services.
 
 \subsection{Software Decision Module}
 
-\begin{description}
-\item[Secrets:] The design decision based on mathematical theorems, physical
-  facts, or programming considerations. The secrets of this module are
-  \emph{not} described in the SRS.
-\item[Services:] Includes data structure and algorithms used in the system that
-  do not provide direct interaction with the user. 
-  % Changes in these modules are more likely to be motivated by a desire to
-  % improve performance than by externally imposed changes.
-\item[Implemented By:] --
-\end{description}
-
 \subsubsection{Tensor I/O Module (\mref{mTIO})} \label{sec:mTIO}
 \begin{description}
 	\item[Secrets:] The specific compression algorithms, network performance heuristics, cpu
 		performance heuristics, and networking protocols used to transfer Tensors between devices.
 \end{description}
-
-\subsubsection{Etc.}
 
 \section{Traceability Matrix} \label{SecTM}
 
@@ -430,18 +396,23 @@ FR.S.4.3 & \mref{mTIO}\\
 FR.S.4.4 & \mref{mTIO}\\
 FR.S.4.5 & \mref{mTIO}\\
 FR.S.4.6 & \mref{mTIO}\\
+FR.S.5.1 & \mref{mLC}\\
+FR.S.5.2 & \mref{mLC}\\
+FR.S.5.3 & \mref{mLC}\\
+FR.S.5.4 & \mref{mLC}\\
+FR.S.5.5 & \mref{mLC}\\
+FR.S.5.6 & \mref{mLC}\\
+NFR.S.1 & \mref{mLC}\\
+NFR.S.2 & \mref{mLC}\\
 NFR.S.4 & \mref{mIE}, \mref{mGGML}\\
 NFR.S.5 & \mref{mIE}\\
 NFR.S.6 & \mref{mIE}\\
+NFR.S.7 & \mref{mLC}\\
 NFR.S.8 & \mref{mGGML}\\
 NFR.S.11 & \mref{mTIO}\\
 NFR.S.13 & \mref{mGGML}\\
 NFR.S.14 & \mref{mGGML}\\
 NFR.S.15 & \mref{mGGML}\\
-FR.S.5.1, FR.S.5.2, FR.S.5.3 & \mref{mLC}\\
-FR.S.5.4 & \mref{mLC}\\
-FR.S.5.5, FR.S.5.6 & \mref{mLC}\\
-NFR.S.1, NFR.S.2, NFR.S.7 & \mref{mLC}\\
 % Add rows for the other modules here.
 \bottomrule
 \end{tabular}
@@ -543,8 +514,6 @@ it is not appropriate for a given project.}
     \item Anthropic Claude Sonnet 5.5.
 \end{itemize}
 
-\wss{Give the name of the AI tool(s) used and the version.}
-
 \subsection{How and Where Used}
 
 \begin{itemize}
@@ -560,16 +529,6 @@ it is not appropriate for a given project.}
     traceability table.
 \end{itemize}
 
-\wss{Explain what the tool(s) were used for.  Examples include: brainstorming,
-explaining a technical concept, reviewing the document, generating or modifying
-text, generating or modifying diagrams, identifying errors or omissions or
-inconsistencies.}
-
-\wss{For each of the uses, identify which parts of the document were affected.}
-
-\wss{You do not need to report every interaction, but you should disclose the 
-uses that materially contributed to your work}
-
 \subsection{Verification of AI-Generated Content}
 
 We checked that every SRS likely change has a matching anticipated change, that
@@ -577,17 +536,6 @@ each anticipated change maps to one module, and that the requirement IDs in the
 trace table exist in the SRS. Content generated for the Lake Client entry was
 proofread and verified to confirm accuracy and alignment with existing team
 objectives and documentation.
-
-\wss{\begin{itemize}
-    \item Describe how the team checked AI-generated or AI-assisted material
-    before including it in the document.
-    \item In particular, verify factual claims, technical assertions,
-    requirements, calculations, references, and other information for which an
-    AI system may produce incorrect or fabricated results.
-    \item \textbf{The team is responsible for the accuracy, completeness,
-consistency, and appropriateness of the submitted document, regardless of
-whether material was generated by a human or an AI system.}
-\end{itemize}}
 
 \newpage{}
 

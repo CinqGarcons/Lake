@@ -53,8 +53,7 @@ urlcolor=cyan          % color of external links
 \begin{tabularx}{\textwidth}{p{3cm}p{2cm}X}
 \toprule {\bf Date} & {\bf Version} & {\bf Notes}\\
 \midrule
-Date 1 & 1.0 & Notes\\
-Date 2 & 1.1 & Notes\\
+November 18 & -1 & All contributors involved.\\
 \bottomrule
 \end{tabularx}
 
@@ -192,7 +191,6 @@ The following table is taken directly from the Module Guide document for this pr
 \end{table}
 
 \newpage
-~\newpage
 
 \section{MIS of GGML} \label{mis:ggml}
 
@@ -299,7 +297,8 @@ Coordinator
 
 \subsection{Uses}
 
-Core (Section~\ref{mis:core}), Partition, Inference Engine.
+Core (Section~\ref{mis:core}), Partition (Section~\ref{mis:partition}), Inference Engine
+(Section~\ref{mis:ie}).
 
 \subsection{Syntax}
 
@@ -402,7 +401,7 @@ Core
 
 \subsection{Uses}
 
-Inference Engine, Tensor I/O.
+Inference Engine (Section~\ref{mis:ie}), Tensor I/O (Section~\ref{mis:tensorio}).
 
 \subsection{Syntax}
 
@@ -603,29 +602,14 @@ Lake Client (User Interface)
 
 \subsection{Uses}
 
-\begin{itemize}
-  \item\textbf{NetState} $=\{\mathsf{U}, \mathsf{A}, \mathsf{I}, \mathsf{G},
-    \mathsf{R}, \mathsf{X}\}$, the states of the allocation state machine in SRS
-    S.9.3. Used to represent the state of the overall network.
-  \item\textbf{ChatState}: seq of string, representing all messages the current inference session.
-  \item\textbf{RenderError}: Exception raised when rendering of network or chat fails.
-\end{itemize}
+Coordinator (Section~\ref{mis:coordinator})
 
 \subsection{Syntax}
 
 \subsubsection{Exported Access Programs}
 
-\begin{center}
-\begin{tabular}{p{4.0cm} p{3.8cm} p{2cm} p{3cm}}
-\toprule
-\textbf{Name} & \textbf{In} & \textbf{Out} & \textbf{Exceptions} \\
-\midrule
-renderNetwork & state: $\mathit{NetState}$ & - & RenderingError \\
-renderChat & state: $\mathit{ChatState}$ & - & RenderingError \\
-sendChatMessage & message: string & - & - \\
-\bottomrule
-\end{tabular}
-\end{center}
+No exported access programs for the Lake Client. This module has no external API, it only makes
+requests to the Coordinator's REST API.
 
 \subsection{Semantics}
 
@@ -634,6 +618,9 @@ sendChatMessage & message: string & - & - \\
 \begin{itemize}
   \item $\mathit{uiState}$: Abstract UI representation (including both the network and chat portions).
   \item $\mathit{chatMessages}$- seq of string. All messages included in current inference session.
+  \item $\mathit{netState} =\{\mathsf{U}, \mathsf{A}, \mathsf{I}, \mathsf{G},
+    \mathsf{R}, \mathsf{X}\}$, the states of the allocation state machine in SRS
+    S.9.3. Used to represent the state of the overall network.
 \end{itemize}
 
 \subsubsection{Environment Variables}
