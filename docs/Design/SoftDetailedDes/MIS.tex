@@ -216,19 +216,22 @@ inference.
 
 \begin{itemize}
 \item $\mathit{DeviceID}$: string identifying a device on the local network.
-\item $\mathit{ModelInfo}$: a sequence of partition-unit records in
-  execution order. Each record contains \textit{memory}: $\mathbb{N}$
+\item $\mathit{ModelInfo} = \text{seq of } (\mathit{memory}:\mathbb{N},
+  \mathit{layers}:\{0,1\})$: partition units in execution order.
+  Each tuple contains \textit{memory}
   (estimated weight and KV-cache memory in bytes for \textit{CONTEXT\_MAX})
-  and \textit{layers}: $\{0,1\}$ (1 for a transformer layer, 0 for an embedding
+  and \textit{layers} (1 for a transformer layer, 0 for an embedding
   or output head).
-\item $\mathit{DeviceInfo}$: a record containing \textit{id}: $\mathit{DeviceID}$
-  (device identifier), \textit{capacity}: $\mathbb{N}$ (usable GPU-accessible
-  memory in bytes) and \textit{rate}: $\mathbb{R}$ (measured token throughput
+\item $\mathit{DeviceInfo} = (\mathit{id}:\mathit{DeviceID},
+  \mathit{capacity}:\mathbb{N},\mathit{rate}:\mathbb{R})$.
+  The fields are \textit{id} (device identifier), \textit{capacity} (usable
+  GPU-accessible memory in bytes) and \textit{rate} (measured token throughput
   in tokens per second).
-\item $\mathit{Scheme}$: a sequence of allocation records in execution order.
-  Each record contains \textit{node}: $\mathit{DeviceID}$ (assigned device),
-  \textit{first}: $\mathbb{N}$ (first partition-unit index) and
-  \textit{last}: $\mathbb{N}$ (last partition-unit index). Both bounds are
+\item $\mathit{Scheme} = \text{seq of } (\mathit{node}:\mathit{DeviceID},
+  \mathit{first}:\mathbb{N},\mathit{last}:\mathbb{N})$: allocations in execution
+  order. Each tuple contains \textit{node} (assigned device),
+  \textit{first} (first partition-unit index) and
+  \textit{last} (last partition-unit index). Both bounds are
   inclusive. Coordinator uses these assignments to configure Core.
 \end{itemize}
 
@@ -240,7 +243,7 @@ inference.
 \toprule
 \textbf{Name} & \textbf{In} & \textbf{Out} & \textbf{Exceptions}\\
 \midrule
-partition & $m:\mathit{ModelInfo}$, $D$: sequence of $\mathit{DeviceInfo}$ &
+partition & $m:\mathit{ModelInfo}$, $D$: seq of $\mathit{DeviceInfo}$ &
 $\mathit{Scheme}$ & InvalidInput, NoValidScheme\\
 \bottomrule
 \end{tabularx}
