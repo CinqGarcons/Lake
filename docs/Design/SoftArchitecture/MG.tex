@@ -378,8 +378,6 @@ routing of requests and underlying services.
 \begin{description}
 \item[Secrets:] The algorithm for choosing model
   partition boundaries and assigning them to devices.
-\item[Implemented By:] \progname{}
-\item[Type of Module:] Library
 \end{description}
 
 \section{Traceability Matrix} \label{SecTM}
@@ -639,7 +637,7 @@ it is not appropriate for a given project.}
     \item \textbf{Anticipated and Unlikely Changes}: Claude proposed the
     anticipated and unlikely changes, working from the SRS, the Hazard Analysis
     assumptions and the Development Plan, and matched each anticipated change
-    to a module. We reviewed the list and the module for each change.
+    to a module. This list was reviewed along with the module for each change.
     \item \textbf{GGML and Inference Engine entries}: Claude drafted the
     secrets and the trace table rows for these two modules.
     \item \textbf{Lake Client (User Interface) entry}: Sonnet 5.5 was used to
@@ -654,7 +652,7 @@ refine wording and sentence structure.
 
 \subsection{Verification of AI-Generated Content}
 
-We checked that every SRS likely change has a matching anticipated change, that
+Verifications included: every SRS likely change has a matching anticipated change, that
 each anticipated change maps to one module, and that the requirement IDs in the
 trace table exist in the SRS. Content generated for the Lake Client entry was
 proofread and verified to confirm accuracy and alignment with existing team
