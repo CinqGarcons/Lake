@@ -172,17 +172,17 @@ The following table is taken directly from the Module Guide document for this pr
 \textbf{Level 1} & \textbf{Level 2}\\
 \midrule
 
-{Hardware-Hiding} & GGML\\
+{Hardware-Hiding} & \hyperref[mis:ggml]{GGML} \\
 \midrule
 
-\multirow{4}{0.3\textwidth}{Behaviour-Hiding} & Coordinator\\
-& Core\\
-& Inference Engine\\
-& Lake Client\\
+\multirow{4}{0.3\textwidth}{Behaviour-Hiding} & \hyperref[mis:coordinator]{Coordinator}\\
+& \hyperref[mis:core]{Core}\\
+& \hyperref[mis:ie]{Inference Engine}\\
+& \hyperref[mis:lc]{Lake Client}\\
 \midrule
 
 \multirow{2}{0.3\textwidth}{Software Decision} & \hyperref[mis:partition]{Partition}\\
-& Tensor I/O\\
+& \hyperref[mis:tensorio]{Tensor I/O}\\
 \bottomrule
 
 \end{tabular}
@@ -680,7 +680,7 @@ endRequest frees a finished request's KV cache.\par}
 
 \newpage
 
-\section{MIS of LakeClient} \label{LCMod}
+\section{MIS of LakeClient} \label{mis:lc}
 
 \subsection{Module}
 
@@ -825,8 +825,8 @@ recv & -- & $\mathit{Step}$ &
 \begin{itemize}
   \item Anthropic Claude Sonnet 5.5
   \item Anthropic Claude Opus 5.5, used through Claude Code.
+  \item OpenAI ChatGPT gpt-6.1-sol.
 \end{itemize}
-
 
 \subsection{How and Where Used}
 
@@ -847,10 +847,10 @@ recv & -- & $\mathit{Step}$ &
     SRS Inference Engine requirements, the Core module's interface and the Rust
     crates in the repository. We reviewed the draft and decided which module
     reads GGUF files and owns the tensor type.
+    \item \textbf{MIS of Partition}: ChatGPT gpt-6.1-sol was used to review an initial human written draft for the 
+    MIS of Partition, then was used to translate the draft onto the LaTeX document 
+    and refine wording and sentence structure.
 \end{itemize}
-
-ChatGPT gpt-6.1-sol was used to review an initial human written draft for the MIS of Partition, then was used to translate the draft onto the LaTeX document 
- and refine wording and sentence structure.
 
 \subsection{Verification of AI-Generated Content}
 
