@@ -19,22 +19,24 @@
 \maketitle
 
 This document summarizes the contributions of each team member up to the POC
-Demo.  The time period of interest is the time between the beginning of the term
+Demo. The time period of interest is the time between the beginning of the term
 and the POC demo.
-
-\wss{Please do not delete sections or modify the table formats.  Standardization
-helps the instructors and TAs to review these documents. You may add sections to
-the report.}
-
-\wss{Remove the instructor guidelines/comments in the final version.}
-
-\wss{Fill in the requested information, like project url, TA name, supervisor name, etc.}
 
 \section{Demo Plans}
 
-\wss{What is your feasibility risk?}
+The two feasibility risks involving \progname{} are the following:
 
-\wss{What will you be demonstrating}
+\begin{itemize}
+    \item\textbf{Risk 1: Model cannot be split.} The core premise of \progname{} is that it will split up a large language model across more than one device. This will be done by splitting the layers of the model.
+    If this cannot be completed, the system will fail.
+    \item\textbf{Risk 2: Model can be split, yet provides no improvement.} In the case a model can be split across more than one device, the new device network must improve upon the capabilities that only one device may have.
+    The metric the team will initially target is capacity. If two devices can carry a larger model (more parameters) than one of the devices, then there is benefit to using Lake because a model with more parameters is
+    generally more performant. If this cannot be done, then users have no reason to begin using \progname{}.
+\end{itemize}
+
+In order to address these risks, the team will demonstrate a large language model that is split up among two devices. This model will be larger than either individual device can hold in its memory.
+The demonstration session will consist of the team partitioning the model across the two devices using the \progname{} system, followed by starting an inference session by prompting the model.
+This will show that both key risks have been mitigated.
 
 \section{Team Meeting Attendance}
 
@@ -50,11 +52,11 @@ number of team meetings held by the team.}
 \textbf{Student} & \textbf{Meetings}\\
 \midrule
 Total & Num\\
-Name 1 & Num\\
-Name 2 & Num\\
-Name 3 & Num\\
-Name 4 & Num\\
-Name 5 & Num\\
+Ethan Walsh & Num\\
+Colin Chambachan & Num\\
+Matthew Nesbitt & Num\\
+Jinwoo Hong & Num\\
+Gary Qin & Num\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -63,14 +65,7 @@ Name 5 & Num\\
 
 \section{Supervisor/Stakeholder Meeting Attendance}
 
-\wss{For each team member how many supervisor/stakeholder team meetings have
-they attended over the time period of interest.  This number should be determined
-from the supervisor meeting issues in the team's repo.  The first entry in the
-table should be the total number of supervisor and team meetings held by the
-team.  If there is no supervisor, there will usually be meetings with
-stakeholders (potential users) that can serve a similar purpose.}
-
-\noindent \textbf{Supervisor's Name: } [fill in this information]
+The following section is not applicable to the \progname{} project since it does not have a supervisor.
 
 \begin{table}[H]
 \centering
@@ -78,30 +73,17 @@ stakeholders (potential users) that can serve a similar purpose.}
 \toprule
 \textbf{Student} & \textbf{Meetings}\\
 \midrule
-Total & Num\\
-Name 1 & Num\\
-Name 2 & Num\\
-Name 3 & Num\\
-Name 4 & Num\\
-Name 5 & Num\\
+Total & 0\\
+Ethan Walsh & 0\\
+Colin Chambachan & 0\\
+Matthew Nesbitt & 0\\
+Jinwoo Hong & 0\\
+Gary Qin & 0\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\wss{If needed, an explanation for the counts can be provided here.}
-
 \section{Lecture Attendance}
-
-\wss{For each team member how many lectures have they attended over the time
-period of interest.  This number should be determined from the lecture issues in
-the team's repo. You can find the number of lectures in the time period of
-interest by looking at the
-\href{https://calendar.google.com/calendar/u/0/embed?src=rnboqiaki1k2la7rpu3bn0um58@group.calendar.google.com&ctz=America/Toronto}
-{Google calendar} for the capstone course. The first entry in the
-table should be the total number of lectures held for the class during the period of interest.}
-
-\wss{NOTE: There will be approximately 13 lectures between the start of class
-and the POC demos}
 
 \begin{table}[H]
 \centering
@@ -109,25 +91,19 @@ and the POC demos}
 \toprule
 \textbf{Student} & \textbf{Lectures}\\
 \midrule
-Total & Num\\
-Name 1 & Num\\
-Name 2 & Num\\
-Name 3 & Num\\
-Name 4 & Num\\
-Name 5 & Num\\
+Total & 11\\
+Ethan Walsh & 11\\
+Colin Chambachan & 7\\
+Matthew Nesbitt & 11\\
+Jinwoo Hong & 7\\
+Gary Qin & 10\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\wss{If needed, an explanation for the lecture attendance can be provided here.}
-
 \section{TA Document Discussion Attendance}
 
-\wss{For each team member how many of the informal document discussion meetings
-with the TA were attended over the time period of interest. The first row is the
-total number of discussion meetings scheduled by the TA with the team.}
-
-\noindent \textbf{TA's Name: } [fill in this information]
+\noindent \textbf{TA's Name: Rebecca Di Filippo}
 
 \begin{table}[H]
 \centering
@@ -135,35 +111,17 @@ total number of discussion meetings scheduled by the TA with the team.}
 \toprule
 \textbf{Student} & \textbf{Meetings}\\
 \midrule
-Total & Num\\
-Name 1 & Num\\
-Name 2 & Num\\
-Name 3 & Num\\
-Name 4 & Num\\
-Name 5 & Num\\
+Total & 4\\
+Ethan Walsh & 4\\
+Colin Chambachan & 4\\
+Matthew Nesbitt & 4\\
+Jinwoo Hong & 4\\
+Gary Qin & 4\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\wss{If needed, an explanation for the attendance can be provided here.}
-
 \section{Commits, Lines Added and Lines Deleted, Pull Requests}
-
-\wss{For each team member how many commits to the main branch have been made
-over the time period of interest.  The total is the total number of commits for
-the entire team since the beginning of the term.  The percentage is the
-percentage of the total commits made by each team member.}
-
-\wss{There are also columns for lines added and lines deleted to give a sense of
-the magnitude of each team member's contributions.  Note that these numbers can
-be somewhat misleading, as a team member who does refactoring may have high
-numbers in both columns, while a team member who implements a large new feature
-may have a high number of lines added, but few lines deleted.  As for all commit
-information, these numbers will be interpreted with care.}
-
-\wss{The pull requests column counts the number of pull requests created by each
-team member.  This is a measure of how many contributions were made in branches,
-which may not be reflected in the commit counts for the main branch.}
 
 \begin{table}[H]
 \centering
@@ -172,20 +130,18 @@ which may not be reflected in the commit counts for the main branch.}
 \textbf{Student} & \textbf{Commits} & \textbf{Percent} & \textbf{Lines Added} &
 \textbf{Lines Deleted} & \textbf{Pull Requests}\\
 \midrule
-Total & Num & 100\% & total added & total deleted & total PRs\\
-Name 1 & Num & \% & num & num & num\\
-Name 2 & Num & \% & num & num & num\\
-Name 3 & Num & \% & num & num & num\\
-Name 4 & Num & \% & num & num & num\\
-Name 5 & Num & \% & num & num & num\\
+Total & 212 & 100\% & 49811 & 6091 & 74\\
+Ethan Walsh & 31 & 14.6\% & 1355 & 505 & 10\\
+Colin Chambachan & 83 & 39.2\% & 6103 & 2564 & 28\\
+Matthew Nesbitt & 38 & 17.9\% & 13732 & 350 & 18\\
+Jinwoo Hong & 25 & 11.8\% & 446 & 254 & 7\\
+Gary Qin & 35 & 16.5\% & 2837 & 2418 & 11\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\wss{If needed, an explanation for the counts can be provided here.  For
-instance, if a team member has more commits to unmerged branches, these numbers
-can be provided here.  If multiple people contribute to a commit, git allows for
-multi-author commits.}
+The reason that Colin and Matthew have significantly higher additions than other team members is due to their addition of some of the initial infrastructure of the codebase. For example,
+Matthew added the CI infrastructure and .yaml files.
 
 \section{Issue Tracker}
 
@@ -199,11 +155,11 @@ issues (C only)) over the time period of interest.}
 \toprule
 \textbf{Student} & \textbf{Authored (O+C)} & \textbf{Assigned (C only)}\\
 \midrule
-Name 1 & Num & Num \\
-Name 2 & Num & Num \\
-Name 3 & Num & Num \\
-Name 4 & Num & Num \\
-Name 5 & Num & Num \\
+Ethan Walsh & Num & Num \\
+Colin Chambachan & Num & Num \\
+Matthew Nesbitt & Num & Num \\
+Jinwoo Hong & Num & Num \\
+Gary Qin & Num & Num \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -218,9 +174,13 @@ Name 5 & Num & Num \\
 
 \section{Custom Documents (CDs)}
 
-\wss{What is the plan (as documented in TeamComposition.csv) for the team's
-CDs?  Should the CDs be modified now that the team knows more about the
-project?}
+The Custom Documents are as follows:
+
+\begin{itemize}
+    \item \textbf{Fall: Design Thinking Report} - This report was used to inform the team of user interface related decisions and to get feedback from peers. It will not be changed.
+    \item \textbf{Winter: Performance Report} - This report will be used to gain more insight into the performance of the system as well as potential improvements. At this time, the team is in agreement
+    that it should not be changed to another option.
+\end{itemize}
 
 \section{Team Charter Trigger Items}
 
