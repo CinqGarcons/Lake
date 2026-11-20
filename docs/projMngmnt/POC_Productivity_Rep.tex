@@ -4,6 +4,7 @@
 \restylefloat{table}
 
 \usepackage{booktabs}
+\usepackage{graphicx}
 
 \title{Team Productivity: POC\\\progname}
 
@@ -22,55 +23,43 @@ This document summarizes the contributions of each team member up to the POC
 Demo.  The time period of interest is the time between the beginning of the term
 and the POC demo.
 
-\wss{Please do not delete sections or modify the table formats.  Standardization
-helps the instructors and TAs to review these documents. You may add sections to
-the report.}
-
-\wss{Remove the instructor guidelines/comments in the final version.}
-
-\wss{Fill in the requested information, like project url, TA name, supervisor name, etc.}
-
 \section{Demo Plans}
 
-\wss{What is your feasibility risk?}
+The two feasibility risks involving \progname{} are the following:
 
-\wss{What will you be demonstrating}
+\begin{itemize}
+    \item\textbf{Risk 1: Model cannot be split.} The core premise of \progname{} is that it will split up a large language model across more than one device. This will be done by splitting the layers of the model.
+    If this cannot be completed, the system will fail.
+    \item\textbf{Risk 2: Model can be split, yet provides no improvement.} In the case a model can be split across more than one device, the new device network must improve upon the capabilities that only one device may have.
+    The metric the team will initially target is capacity. If two devices can carry a larger model (more parameters) than one of the devices, then there is benefit to using Lake because a model with more parameters is
+    generally more performant. If this cannot be done, then users have no reason to begin using \progname{}.
+\end{itemize}
+
+In order to address these risks, the team will demonstrate a large language model that is split up among two devices. This model will be larger than either individual device can hold in its memory.
+The demonstration session will consist of the team partitioning the model across the two devices using the \progname{} system, followed by starting an inference session by prompting the model.
+This will show that both key risks have been mitigated.
 
 \section{Team Meeting Attendance}
 
-\wss{For each team member how many team meetings have they attended over the
-time period of interest.  This number should be determined from the meeting
-issues in the team's repo.  The first entry in the table should be the total
-number of team meetings held by the team.}
-
 \begin{table}[H]
 \centering
 \begin{tabular}{ll}
 \toprule
 \textbf{Student} & \textbf{Meetings}\\
 \midrule
-Total & Num\\
-Name 1 & Num\\
-Name 2 & Num\\
-Name 3 & Num\\
-Name 4 & Num\\
-Name 5 & Num\\
+Total & 5\\
+Ethan Walsh & 5\\
+Colin Chambachan & 5\\
+Matthew Nesbitt & 5\\
+Jinwoo Hong & 5\\
+Gary Qin & 5\\
 \bottomrule
 \end{tabular}
 \end{table}
-
-\wss{If needed, an explanation for the counts can be provided here.}
 
 \section{Supervisor/Stakeholder Meeting Attendance}
 
-\wss{For each team member how many supervisor/stakeholder team meetings have
-they attended over the time period of interest.  This number should be determined
-from the supervisor meeting issues in the team's repo.  The first entry in the
-table should be the total number of supervisor and team meetings held by the
-team.  If there is no supervisor, there will usually be meetings with
-stakeholders (potential users) that can serve a similar purpose.}
-
-\noindent \textbf{Supervisor's Name: } [fill in this information]
+The following section is not applicable to the \progname{} project since it does not have a supervisor.
 
 \begin{table}[H]
 \centering
@@ -78,30 +67,17 @@ stakeholders (potential users) that can serve a similar purpose.}
 \toprule
 \textbf{Student} & \textbf{Meetings}\\
 \midrule
-Total & Num\\
-Name 1 & Num\\
-Name 2 & Num\\
-Name 3 & Num\\
-Name 4 & Num\\
-Name 5 & Num\\
+Total & 0\\
+Ethan Walsh & 0\\
+Colin Chambachan & 0\\
+Matthew Nesbitt & 0\\
+Jinwoo Hong & 0\\
+Gary Qin & 0\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\wss{If needed, an explanation for the counts can be provided here.}
-
 \section{Lecture Attendance}
-
-\wss{For each team member how many lectures have they attended over the time
-period of interest.  This number should be determined from the lecture issues in
-the team's repo. You can find the number of lectures in the time period of
-interest by looking at the
-\href{https://calendar.google.com/calendar/u/0/embed?src=rnboqiaki1k2la7rpu3bn0um58@group.calendar.google.com&ctz=America/Toronto}
-{Google calendar} for the capstone course. The first entry in the
-table should be the total number of lectures held for the class during the period of interest.}
-
-\wss{NOTE: There will be approximately 13 lectures between the start of class
-and the POC demos}
 
 \begin{table}[H]
 \centering
@@ -109,25 +85,19 @@ and the POC demos}
 \toprule
 \textbf{Student} & \textbf{Lectures}\\
 \midrule
-Total & Num\\
-Name 1 & Num\\
-Name 2 & Num\\
-Name 3 & Num\\
-Name 4 & Num\\
-Name 5 & Num\\
+Total & 11\\
+Ethan Walsh & 11\\
+Colin Chambachan & 7\\
+Matthew Nesbitt & 11\\
+Jinwoo Hong & 7\\
+Gary Qin & 10\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\wss{If needed, an explanation for the lecture attendance can be provided here.}
-
 \section{TA Document Discussion Attendance}
 
-\wss{For each team member how many of the informal document discussion meetings
-with the TA were attended over the time period of interest. The first row is the
-total number of discussion meetings scheduled by the TA with the team.}
-
-\noindent \textbf{TA's Name: } [fill in this information]
+\noindent \textbf{TA's Name: } Rebecca Di Filippo
 
 \begin{table}[H]
 \centering
@@ -135,63 +105,54 @@ total number of discussion meetings scheduled by the TA with the team.}
 \toprule
 \textbf{Student} & \textbf{Meetings}\\
 \midrule
-Total & Num\\
-Name 1 & Num\\
-Name 2 & Num\\
-Name 3 & Num\\
-Name 4 & Num\\
-Name 5 & Num\\
+Total & 4\\
+Ethan Walsh & 4\\
+Colin Chambachan & 4\\
+Matthew Nesbitt & 4\\
+Jinwoo Hong & 4\\
+Gary Qin & 4\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\wss{If needed, an explanation for the attendance can be provided here.}
-
 \section{Commits, Lines Added and Lines Deleted, Pull Requests}
-
-\wss{For each team member how many commits to the main branch have been made
-over the time period of interest.  The total is the total number of commits for
-the entire team since the beginning of the term.  The percentage is the
-percentage of the total commits made by each team member.}
-
-\wss{There are also columns for lines added and lines deleted to give a sense of
-the magnitude of each team member's contributions.  Note that these numbers can
-be somewhat misleading, as a team member who does refactoring may have high
-numbers in both columns, while a team member who implements a large new feature
-may have a high number of lines added, but few lines deleted.  As for all commit
-information, these numbers will be interpreted with care.}
-
-\wss{The pull requests column counts the number of pull requests created by each
-team member.  This is a measure of how many contributions were made in branches,
-which may not be reflected in the commit counts for the main branch.}
 
 \begin{table}[H]
 \centering
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{lllllll}
 \toprule
 \textbf{Student} & \textbf{Commits} & \textbf{Percent} & \textbf{Lines Added} &
 \textbf{Lines Deleted} & \textbf{Pull Requests}\\
 \midrule
-Total & Num & 100\% & total added & total deleted & total PRs\\
-Name 1 & Num & \% & num & num & num\\
-Name 2 & Num & \% & num & num & num\\
-Name 3 & Num & \% & num & num & num\\
-Name 4 & Num & \% & num & num & num\\
-Name 5 & Num & \% & num & num & num\\
+Total & 223 & 100\% & 13150 & 6196 & 77\\
+Ethan Walsh & 33 & 14.8\% & 1354 & 539 & 12\\
+Colin Chambachan & 83 & 37.2\% & 6103 & 2564 & 29\\
+Matthew Nesbitt & 44 & 19.7\% & 2414 & 436 & 20\\
+Jinwoo Hong & 28 & 12.6\% & 689 & 277 & 9\\
+Gary Qin & 35 & 15.7\% & 2837 & 2418 & 12\\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table}
 
-\wss{If needed, an explanation for the counts can be provided here.  For
-instance, if a team member has more commits to unmerged branches, these numbers
-can be provided here.  If multiple people contribute to a commit, git allows for
-multi-author commits.}
+Commits are the non-merge commits on \texttt{main}, with each member's GitHub
+and local git identities combined. Three kinds of commit are left out:
+\begin{itemize}
+  \item the initial commit, which imported the course template (11{,}348
+    lines);
+  \item the 53 commits made by the team's GitHub App bot, which only update the
+    generated PDFs;
+  \item binary files, such as PDFs, which git does not count in lines.
+\end{itemize}
+A commit with \texttt{Co-authored-by} trailers counts for each of its authors,
+along with its lines. Twelve commits have a co-author, mostly review suggestions
+applied to a pull request (10 by Matthew, 1 each by Ethan and Jinwoo). So the
+rows add to 218 commits and 106.2\%, more than the 206 commits in the total. All pull requests are counted,
+whatever their state. Of the 77, 71 have been merged, 3 are still open
+(Colin, Matthew and Jinwoo each have one) and 3 of Colin's were closed without
+merging.
 
 \section{Issue Tracker}
-
-\wss{For each team member how many issues have they authored (including open and
-closed issues (O+C)) and how many have they been assigned (only counting closed
-issues (C only)) over the time period of interest.}
 
 \begin{table}[H]
 \centering
@@ -199,53 +160,94 @@ issues (C only)) over the time period of interest.}
 \toprule
 \textbf{Student} & \textbf{Authored (O+C)} & \textbf{Assigned (C only)}\\
 \midrule
-Name 1 & Num & Num \\
-Name 2 & Num & Num \\
-Name 3 & Num & Num \\
-Name 4 & Num & Num \\
-Name 5 & Num & Num \\
+Ethan Walsh & 22 & 17 \\
+Colin Chambachan & 45 & 25 \\
+Matthew Nesbitt & 8 & 27 \\
+Jinwoo Hong & 2 & 23 \\
+Gary Qin & 83 & 26 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\wss{If needed, an explanation for the counts can be provided here.}
+Issues opened by people outside the team, such as peer reviewers from other
+teams, are not counted. One closed issue can be assigned to several members, so
+the assigned column can add to more than the number of closed issues.
 
 \section{CICD via GitHub Actions}
 
-\wss{Say how CICD technology is used and will be used in your project.}
+GitHub Actions checks every pull request to \texttt{main} and keeps the
+published documents up to date. The workflows are:
+\begin{itemize}
+  \item
+    \href{https://github.com/capstoneCEGJM/Lake/blob/main/.github/workflows/latex-pages.yml}{\texttt{latex-pages.yml}}
+    builds every LaTeX document on each pull request that changes
+    \texttt{docs/}, so a document that does not compile cannot be merged. On a
+    push to \texttt{main}, it commits the regenerated PDFs and deploys them to
+    GitHub Pages.
+  \item
+    \href{https://github.com/capstoneCEGJM/Lake/blob/main/.github/workflows/lake-build.yml}{\texttt{lake-build.yml}},
+    \href{https://github.com/capstoneCEGJM/Lake/blob/main/.github/workflows/lake-check.yml}{\texttt{lake-check.yml}}
+    and
+    \href{https://github.com/capstoneCEGJM/Lake/blob/main/.github/workflows/lake-test.yml}{\texttt{lake-test.yml}}
+    install the project's toolchains and run \texttt{just build},
+    \texttt{just check} (linting and formatting) and \texttt{just test} on each
+    pull request and push to \texttt{main}.
+  \item
+    \href{https://github.com/capstoneCEGJM/Lake/blob/main/.github/workflows/check-fixups.yml}{\texttt{check-fixups.yml}}
+    fails a pull request that still contains \texttt{fixup!} or
+    \texttt{squash!} commits, so they are squashed before merging.
+  \item
+    \href{https://github.com/capstoneCEGJM/Lake/blob/main/.github/workflows/pr-net-change.yml}{\texttt{pr-net-change.yml}}
+    comments on each pull request with its net lines changed, to help reviewers
+    gauge its size.
+  \item
+    \href{https://github.com/capstoneCEGJM/Lake/blob/main/.github/workflows/rubric-review.yml}{\texttt{rubric-review.yml}}
+    comments on each pull request that changes a document with an automated
+    review of that document against its course rubric.
+\end{itemize}
 
-\wss{Provide links to your CICD yaml files}
+As implementation continues, the build, check and test workflows will cover
+each new module, and the tests from the V\&V Plan will be added to
+\texttt{just test}. A pull request will then only merge once the code builds,
+passes linting and passes its tests.
 
 \section{Custom Documents (CDs)}
 
-\wss{What is the plan (as documented in TeamComposition.csv) for the team's
-CDs?  Should the CDs be modified now that the team knows more about the
-project?}
+The Custom Documents are as follows:
+
+\begin{itemize}
+    \item \textbf{Fall: Design Thinking Report} - This report was used to inform the team of user interface related decisions and to get feedback from peers. It will not be changed.
+    \item \textbf{Winter: Performance Report} - This report will be used to gain more insight into the performance of the system as well as potential improvements. At this time, the team is in agreement
+    that it should not be changed to another option.
+\end{itemize}
 
 \section{Team Charter Trigger Items}
 
-\wss{Provide a summary of the quantified triggers identified in the team's
-charter.}
+\begin{itemize}
+	\item $< 80\%$ team meeting attendance.
+	\item Missing two consecutive meetings.
+	\item Missing a meeting without valid reasoning.
+	\item Reviews for each member should be $\sim80\%$ of the total.
+\end{itemize}
 
-\wss{Provide a list of any violations of the triggers.  If the team wishes, the
-violations can be summarized on aggregate, instead of naming specific team
-members.}
-
-\wss{Provide a plan to address the violations.  This could include revising the
-triggers, if they are found to be too weak, strong or ambiguous.}
+\noindent No team charter triggers have been activated thus far.
 
 \section{Additional Productivity Metrics}
 
-\wss{If your team has additional metrics of productivity, please feel free to
-add them to this report.  If not, please explicitly state that there are no additional
-metrics.}
-
-\wss{Additional metrics can include things like code reviews done, pull requests
-created, count of joining meetings late, count of number of times contributions
-had to be corrected, number of internal deadlines missed, test cases written, etc.}
-
-\wss{We are looking for data on these metrics, not just a list of additional
-metrics the team is planning on tracking.  However, if all you have is a plan,
-please share it here.}
+\begin{table}[H]
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{Student} & \textbf{PR Reviews} & \textbf{Percentage}\\
+\midrule
+Total & 206 & 100\\
+Ethan Walsh & 48 & 23.3\\
+Colin Chambachan & 49 & 23.8\\
+Matthew Nesbitt & 40 & 19.4\\
+Jinwoo Hong & 29 & 14.1\\
+Gary Qin & 40 & 19.4\\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \end{document}
