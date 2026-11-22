@@ -12,6 +12,7 @@ Management sections). By contributing, you agree to follow the
 | just (build runner) | https://github.com/casey/just/blob/master/README.md#installation |
 | uv (Python toolchain) | https://docs.astral.sh/uv/getting-started/installation/ |
 | Rustup (Rust toolchain) | https://rustup.rs |
+| protoc (Protobuf Compiler) | https://protobuf.dev/installation/ |
 
 Lake requires Python >= 3.15, and rustc >= 1.90, but uv and Rustup should handle this for you.
 
