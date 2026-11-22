@@ -8,5 +8,4 @@ fn main() {
     sleep(Duration::new(0, 500000000));
     engine::hello();
     ggml_rs::hello();
-    tensor_io::hello();
 }
