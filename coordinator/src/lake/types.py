@@ -46,7 +46,7 @@ class NetState(StrEnum):
 
 @dataclass(frozen=True)
 class Segment:
-    """A node and the first and last layers it holds."""
+    """A node and the first and last partition units it holds (1-based, inclusive)."""
 
     node: DeviceID
     first: int
