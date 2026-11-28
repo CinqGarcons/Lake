@@ -7,5 +7,20 @@ rust-version = { workspace = true }
 authors = { workspace = true }
 license = { workspace = true }
 
+[dependencies]
+ggml_rs = { workspace = true }
+tokio = { workspace = true, features = ["sync", "rt-multi-thread", "net"] }
+tokio-stream = { workspace = true }
+tonic = { workspace = true, features = ["transport"] }
+tonic-prost = { workspace = true }
+prost = { workspace = true }
+anyhow = { workspace = true }
+
+[dev-dependencies]
+rstest = { workspace = true }
+
 [lints]
 workspace = true
+
+[build-dependencies]
+tonic-prost-build = "0.14"

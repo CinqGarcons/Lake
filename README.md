@@ -31,6 +31,7 @@ If you're a developer, see CONTRIBUTING.md instead for developer install instruc
 | just (build runner) | https://github.com/casey/just/blob/master/README.md#installation |
 | uv (Python toolchain) | https://docs.astral.sh/uv/getting-started/installation/ |
 | Rustup (Rust toolchain) | https://rustup.rs |
+| protoc (Protobuf Compiler) | https://protobuf.dev/installation/ |
 
 ### Building
 Clone this repo, then in the repo root:

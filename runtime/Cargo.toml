@@ -23,6 +23,17 @@ authors = [
 ggml_rs = { path = "crates/ggml_rs" }
 tensor_io = { path = "crates/tensor_io" }
 
+# External
+tokio = "1"
+tokio-stream = "0.1"
+tonic = "0.14"
+tonic-prost = "0.14"
+prost = "0.14"
+anyhow = "1"
+
+# Dev-dependencies
+rstest = "0.29"
+
 [workspace.lints.rust]
 missing_docs = "deny"
 
