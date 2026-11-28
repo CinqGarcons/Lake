@@ -15,8 +15,11 @@ authors = [
 requires = ["uv_build >= 0.13, < 0.14"]
 build-backend = "uv_build"
 
+[tool.uv.build-backend]
+module-name = "lake"
+
 [project.scripts]
-lake = "coordinator.main:main"
+lake = "lake.cli:main"
 
 [dependency-groups]
 dev = ["pytest", "ruff"]
