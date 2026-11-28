@@ -1,8 +1,28 @@
 """The Coordinator module."""
 
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 
+from lake.scheme import check_scheme
 from lake.types import DeviceID, DevState, NetState, Report, Request, Scheme
+
+
+def handoff_poc_partitions(
+    file: str,
+    p: Scheme,
+    n: int,
+    load_partition: Callable[[DeviceID, str, int, int, DeviceID, DeviceID], None],
+) -> None:
+    """
+    Validate the full scheme, then call load_partition once per node in execution order.
+
+    The callable takes the recipient ID followed by the arguments to Core.load_partition.
+    The first node sends activations to the last, which feeds tokens back to the first,
+    so each node's previous and next neighbours are the same peer.
+    """
+    check_scheme(p, n)
+    first, last = p
+    load_partition(first.node, file, first.first, first.last, last.node, last.node)
+    load_partition(last.node, file, last.first, last.last, first.node, first.node)
 
 
 class Coordinator:
